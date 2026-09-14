@@ -41,7 +41,7 @@ $email = $_SESSION["email"];
 
         body {
             font-family: Arial, sans-serif;
-            background: #f4f6f9;
+            background-color:wheat;
         }
 
         /* Sidebar */
@@ -129,7 +129,7 @@ $email = $_SESSION["email"];
         }
 
         .card {
-            background: white;
+            background: Deep Navy blue;
 
             padding: 25px;
 
@@ -216,17 +216,9 @@ $email = $_SESSION["email"];
         📚 My Subjects
     </a>
 
-    <a href="#">
-        📝 My Results
-    </a>
-
-    <a href="#">
-        📅 Timetable
-    </a>
-
-    <a href="#">
-        📢 Announcements
-    </a>
+    <a href="#">📝 My Results</a>
+    <a href="#">📅 timetable</a>
+    <a href="#">📢 Announcement  </a>
 
     <a href="#">
         💰 Fees

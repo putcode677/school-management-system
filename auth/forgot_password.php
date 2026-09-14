@@ -10,17 +10,16 @@ $message_type = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $email = trim($_POST["email"]);
-    $password = $_POST["password"];
 
-    if (empty($email) || empty($password)) {
+    if (empty($email)) {
 
-        $message = "Please enter your email and password.";
+        $message = "Please enter your email address.";
         $message_type = "error";
 
     } else {
 
         $stmt = $pdo->prepare(
-            "SELECT id, full_name, email, password, role, status
+            "SELECT id, full_name, email
              FROM users
              WHERE email = ?
              LIMIT 1"
@@ -32,50 +31,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if (!$user) {
 
-            $message = "Invalid email or password.";
-            $message_type = "error";
-
-        } elseif (!password_verify($password, $user["password"])) {
-
-            $message = "Invalid email or password.";
-            $message_type = "error";
-
-        } elseif ($user["status"] !== "active") {
-
-            $message = "Your account is inactive. Please contact the administrator.";
+            $message = "No account found with that email address.";
             $message_type = "error";
 
         } else {
 
-            // Create login session
-            $_SESSION["user_id"] = $user["id"];
-            $_SESSION["full_name"] = $user["full_name"];
-            $_SESSION["email"] = $user["email"];
-            $_SESSION["role"] = $user["role"];
+            /*
+             * Password reset email will be added
+             * in the next step.
+             */
 
-            // Redirect according to role
-            switch ($user["role"]) {
-
-                case "admin":
-                    header("Location: ../dashboard/admin.php");
-                    exit;
-
-                case "teacher":
-                    header("Location: ../dashboard/teacher.php");
-                    exit;
-
-                case "student":
-                    header("Location: ../dashboard/student.php");
-                    exit;
-
-                case "parent":
-                    header("Location: ../dashboard/parent.php");
-                    exit;
-
-                default:
-                    $message = "Invalid user role.";
-                    $message_type = "error";
-            }
+            $message = "Email found. Password reset is ready for the next step.";
+            $message_type = "success";
         }
     }
 }
@@ -92,7 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Login - School Management System</title>
+    <title>Forgot Password - School Management System</title>
 
     <style>
 
@@ -112,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             min-height: 100vh;
         }
 
-        .login-container {
+        .container {
             width: 400px;
             background: white;
 
@@ -125,21 +92,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         h2 {
             text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            text-align: center;
+            color: #64748b;
             margin-bottom: 25px;
         }
 
         label {
             display: block;
-
-            margin-top: 15px;
-            margin-bottom: 5px;
-
+            margin-bottom: 7px;
             font-weight: bold;
         }
 
         input {
             width: 100%;
-
             padding: 12px;
 
             border: 1px solid #ccc;
@@ -151,8 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         button {
             width: 100%;
 
-            margin-top: 25px;
-
+            margin-top: 20px;
             padding: 12px;
 
             border: none;
@@ -162,7 +130,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             color: white;
 
             font-size: 16px;
-
             cursor: pointer;
         }
 
@@ -172,11 +139,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         .message {
             padding: 10px;
-
             margin-bottom: 15px;
 
             border-radius: 5px;
-
             text-align: center;
         }
 
@@ -190,13 +155,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             color: #991b1b;
         }
 
-        .register-link {
+        .back {
             text-align: center;
-
             margin-top: 20px;
         }
 
-        .register-link a {
+        .back a {
             color: #2563eb;
             text-decoration: none;
         }
@@ -207,11 +171,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <body>
 
-<div class="login-container">
+<div class="container">
 
-    <h2>School Management System</h2>
+    <h2>Forgot Password?</h2>
 
-    <h3 style="text-align:center;">Login</h3>
+    <p class="description">
+        Enter your email address to reset your password.
+    </p>
 
     <?php if (!empty($message)): ?>
 
@@ -226,7 +192,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <form method="POST">
 
         <label for="email">
-            Email
+            Email Address
         </label>
 
         <input
@@ -237,35 +203,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             required
         >
 
-        <label for="password">
-            Password
-        </label>
-
-        <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter your password"
-            required
-        >
-
         <button type="submit">
-            Login
+            Continue
         </button>
-      <div style="text-align:center; margin-top:15px;">
-    <a href="forgot_password.php"
-       style="color:#2563eb; text-decoration:none;">
-        Forgot Password?
-    </a>
-</div>
+
     </form>
 
-    <div class="register-link">
+    <div class="back">
 
-        Don't have an account?
-
-        <a href="register.php">
-            Create Account
+        <a href="login.php">
+            ← Back to Login
         </a>
 
     </div>
