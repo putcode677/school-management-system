@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } else {
 
+        // Find user by email
         $stmt = $pdo->prepare(
             "SELECT id, full_name, email
              FROM users
@@ -36,12 +37,52 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         } else {
 
+            // Generate secure random token
+            $token = bin2hex(random_bytes(32));
+
+            // Token expires after 30 minutes
+            $expires_at = date(
+                "Y-m-d H:i:s",
+                time() + (30 * 60)
+            );
+
+            // Delete previous reset tokens for this user
+            $delete = $pdo->prepare(
+                "DELETE FROM password_resets
+                 WHERE user_id = ?"
+            );
+
+            $delete->execute([$user["id"]]);
+
+            // Save new reset token
+            $insert = $pdo->prepare(
+                "INSERT INTO password_resets
+                 (user_id, token, expires_at)
+                 VALUES (?, ?, ?)"
+            );
+
+            $insert->execute([
+                $user["id"],
+                $token,
+                $expires_at
+            ]);
+
             /*
-             * Password reset email will be added
-             * in the next step.
+             * For local testing only.
+             * Later we will send this link by email.
              */
 
-            $message = "Email found. Password reset is ready for the next step.";
+            $reset_link =
+                "http://localhost/school_management_system/auth/reset_password.php?token="
+                . urlencode($token);
+
+            $message =
+                "Reset token created successfully.<br><br>"
+                . "For testing, your reset link is:<br>"
+                . "<a href='" . htmlspecialchars($reset_link) . "'>"
+                . "Open Reset Password Page"
+                . "</a>";
+
             $message_type = "success";
         }
     }
@@ -69,7 +110,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         body {
             margin: 0;
+
             font-family: Arial, sans-serif;
+
             background: #f4f6f9;
 
             display: flex;
@@ -80,7 +123,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .container {
-            width: 400px;
+            width: 420px;
+
             background: white;
 
             padding: 30px;
@@ -92,26 +136,33 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         h2 {
             text-align: center;
+
             margin-bottom: 10px;
         }
 
         .description {
             text-align: center;
+
             color: #64748b;
+
             margin-bottom: 25px;
         }
 
         label {
             display: block;
+
             margin-bottom: 7px;
+
             font-weight: bold;
         }
 
         input {
             width: 100%;
+
             padding: 12px;
 
             border: 1px solid #ccc;
+
             border-radius: 6px;
 
             font-size: 15px;
@@ -121,15 +172,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             width: 100%;
 
             margin-top: 20px;
+
             padding: 12px;
 
             border: none;
+
             border-radius: 6px;
 
             background: #2563eb;
+
             color: white;
 
             font-size: 16px;
+
             cursor: pointer;
         }
 
@@ -138,30 +193,46 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .message {
-            padding: 10px;
+            padding: 15px;
+
             margin-bottom: 15px;
 
-            border-radius: 5px;
+            border-radius: 6px;
+
             text-align: center;
+
+            line-height: 1.5;
         }
 
         .success {
             background: #d1fae5;
+
             color: #065f46;
         }
 
         .error {
             background: #fee2e2;
+
             color: #991b1b;
+        }
+
+        .message a {
+            color: #2563eb;
+
+            font-weight: bold;
+
+            text-decoration: none;
         }
 
         .back {
             text-align: center;
+
             margin-top: 20px;
         }
 
         .back a {
             color: #2563eb;
+
             text-decoration: none;
         }
 
@@ -183,7 +254,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="message <?php echo $message_type; ?>">
 
-            <?php echo htmlspecialchars($message); ?>
+            <?php echo $message; ?>
 
         </div>
 
@@ -204,7 +275,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         >
 
         <button type="submit">
-            Continue
+            Generate Reset Link
         </button>
 
     </form>
