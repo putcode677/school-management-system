@@ -1,4 +1,3 @@
-```php
 <?php
 
 session_start();
@@ -54,7 +53,7 @@ $email = $_SESSION["email"];
 
         .sidebar {
 
-            position: fixed;
+            position:fixed;
 
             left: 20px;
             top: 20px;
@@ -461,8 +460,8 @@ $email = $_SESSION["email"];
 
         .logout a {
 
-            display: block;
-
+            display:flex;
+            margin-top: 50px;
             padding: 13px;
 
             border-radius: 15px;
@@ -625,10 +624,6 @@ $email = $_SESSION["email"];
             👤 My Profile
         </a>
 
-    </nav>
-
-
-    <div class="logout">
 
         <a href="../auth/logout.php">
 
@@ -636,7 +631,11 @@ $email = $_SESSION["email"];
 
         </a>
 
-    </div>
+    
+    </nav>
+
+
+   
 
 
 </aside>
