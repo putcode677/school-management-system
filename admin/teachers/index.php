@@ -1,4 +1,3 @@
-```php
 <?php
 session_start();
 
@@ -392,4 +391,3 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 </body>
 </html>
-```

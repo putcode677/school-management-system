@@ -1,4 +1,3 @@
-```php
 <?php
 session_start();
 
@@ -764,4 +763,4 @@ $email = $_SESSION["email"] ?? "";
 
 </body>
 </html>
-```
+
