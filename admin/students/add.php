@@ -217,7 +217,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <label for="full_name">
                     Full Name *
                 </label>
-
+            
                 <input
                     type="text"
                     id="full_name"
