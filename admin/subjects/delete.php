@@ -4,54 +4,53 @@ session_start();
 
 require_once "../../config/database.php";
 
-// Check login
-if (!isset($_SESSION["user_id"])) {
+// Check admin login
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../../auth/login.php");
-    exit;
-}
-
-// Only admin
-if ($_SESSION["role"] !== "admin") {
-    header("Location: ../../auth/login.php");
-    exit;
+    exit();
 }
 
 // Get subject ID
-$id = $_GET["id"] ?? null;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
-if (!$id || !is_numeric($id)) {
+if ($id <= 0) {
     header("Location: index.php");
-    exit;
+    exit();
 }
 
-// Check if subject exists
-$stmt = $pdo->prepare("
-    SELECT id
-    FROM subjects
-    WHERE id = ?
-");
+try {
 
-$stmt->execute([$id]);
+    // Check if subject exists
+    $check = $pdo->prepare(
+        "SELECT id
+         FROM subjects
+         WHERE id = ?"
+    );
 
-$subject = $stmt->fetch();
+    $check->execute([$id]);
 
-if (!$subject) {
+    $subject = $check->fetch(PDO::FETCH_ASSOC);
+
+    if (!$subject) {
+        header("Location: index.php");
+        exit();
+    }
+
+    // Delete subject
+    $delete = $pdo->prepare(
+        "DELETE FROM subjects
+         WHERE id = ?"
+    );
+
+    $delete->execute([$id]);
+
+    // Return to subjects list
     header("Location: index.php");
-    exit;
+    exit();
+
+} catch (PDOException $e) {
+
+    die("Database Error: " . $e->getMessage());
 }
-
-// Delete subject
-$delete = $pdo->prepare("
-    DELETE FROM subjects
-    WHERE id = ?
-");
-
-$delete->execute([$id]);
-
-// Return to subjects page
-header("Location: index.php");
-exit;
-
 ?>
-
 

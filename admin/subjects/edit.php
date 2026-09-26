@@ -4,98 +4,125 @@ session_start();
 
 require_once "../../config/database.php";
 
-// Check login
-if (!isset($_SESSION["user_id"])) {
+// Check admin login
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../../auth/login.php");
-    exit;
-}
-
-// Only admin
-if ($_SESSION["role"] !== "admin") {
-    header("Location: ../../auth/login.php");
-    exit;
+    exit();
 }
 
 // Get subject ID
-$id = $_GET["id"] ?? null;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
-if (!$id || !is_numeric($id)) {
+if ($id <= 0) {
     header("Location: index.php");
-    exit;
+    exit();
 }
 
-// Fetch subject
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM subjects
-    WHERE id = ?
-");
+// Variables
+$subject_name = "";
+$subject_code = "";
+$description = "";
 
-$stmt->execute([$id]);
-
-$subject = $stmt->fetch();
-
-if (!$subject) {
-    header("Location: index.php");
-    exit;
-}
-
-$error = "";
+$errors = [];
 $success = "";
 
-$subject_code = $subject["subject_code"];
-$subject_name = $subject["subject_name"];
-$description = $subject["description"];
+// Get subject
+try {
 
-// Update subject
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $stmt = $pdo->prepare(
+        "SELECT id, subject_name, subject_code, description
+         FROM subjects
+         WHERE id = ?"
+    );
 
-    $subject_code = trim($_POST["subject_code"] ?? "");
-    $subject_name = trim($_POST["subject_name"] ?? "");
-    $description = trim($_POST["description"] ?? "");
+    $stmt->execute([$id]);
 
-    if ($subject_code === "" || $subject_name === "") {
+    $subject = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $error = "Subject code and subject name are required.";
+    if (!$subject) {
+        header("Location: index.php");
+        exit();
+    }
 
-    } else {
+    $subject_name = $subject['subject_name'];
+    $subject_code = $subject['subject_code'];
+    $description = $subject['description'] ?? "";
 
-        // Check duplicate subject code
-        $check = $pdo->prepare("
-            SELECT id
-            FROM subjects
-            WHERE subject_code = ?
-            AND id != ?
-        ");
+} catch (PDOException $e) {
 
-        $check->execute([
-            $subject_code,
-            $id
-        ]);
+    die("Database Error: " . $e->getMessage());
+}
 
-        if ($check->fetch()) {
 
-            $error = "This subject code already exists.";
+// Handle update
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-        } else {
+    $subject_name = trim($_POST['subject_name'] ?? '');
+    $subject_code = trim($_POST['subject_code'] ?? '');
+    $description = trim($_POST['description'] ?? '');
 
-            $update = $pdo->prepare("
-                UPDATE subjects
-                SET
-                    subject_code = ?,
-                    subject_name = ?,
-                    description = ?
-                WHERE id = ?
-            ");
+    // Validation
+    if ($subject_name === '') {
+        $errors[] = "Subject name is required.";
+    }
 
-            $update->execute([
+    if ($subject_code === '') {
+        $errors[] = "Subject code is required.";
+    }
+
+    // Check duplicate subject code
+    if (empty($errors)) {
+
+        try {
+
+            $check = $pdo->prepare(
+                "SELECT id
+                 FROM subjects
+                 WHERE subject_code = ?
+                 AND id != ?"
+            );
+
+            $check->execute([
                 $subject_code,
+                $id
+            ]);
+
+            if ($check->fetch()) {
+                $errors[] = "Subject code already exists.";
+            }
+
+        } catch (PDOException $e) {
+
+            $errors[] = "Database Error: " . $e->getMessage();
+        }
+    }
+
+
+    // Update subject
+    if (empty($errors)) {
+
+        try {
+
+            $stmt = $pdo->prepare(
+                "UPDATE subjects
+                 SET subject_name = ?,
+                     subject_code = ?,
+                     description = ?
+                 WHERE id = ?"
+            );
+
+            $stmt->execute([
                 $subject_name,
-                $description,
+                $subject_code,
+                $description !== '' ? $description : null,
                 $id
             ]);
 
             $success = "Subject updated successfully.";
+
+        } catch (PDOException $e) {
+
+            $errors[] = "Database Error: " . $e->getMessage();
         }
     }
 }
@@ -109,10 +136,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Edit Subject</title>
 
@@ -126,90 +151,277 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         body {
             font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            padding: 30px;
+
+            min-height: 100vh;
+
+            background: #dbeafe;
+
+            color: #243b53;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            padding: 30px 15px;
         }
 
         .container {
+            width: 100%;
+
             max-width: 650px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+
+            background: #dbeafe;
+
+            padding: 35px;
+
+            border-radius: 28px;
+
+            box-shadow:
+                14px 14px 28px #b8c9dc,
+                -14px -14px 28px #ffffff;
+        }
+
+        .header {
+            text-align: center;
+
+            margin-bottom: 30px;
+        }
+
+        .icon {
+            width: 75px;
+
+            height: 75px;
+
+            margin: 0 auto 18px;
+
+            border-radius: 22px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            font-size: 35px;
+
+            background: #dbeafe;
+
+            box-shadow:
+                7px 7px 14px #b8c9dc,
+                -7px -7px 14px #ffffff;
         }
 
         h1 {
-            margin-bottom: 25px;
-            color: #333;
+            font-size: 28px;
+
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 14px 18px;
+
+            border-radius: 14px;
+
+            margin-bottom: 20px;
+
+            font-size: 14px;
+
+            font-weight: bold;
+        }
+
+        .error {
+            color: #991b1b;
+
+            background: #fee2e2;
+
+            box-shadow:
+                inset 4px 4px 8px #d8b4b4,
+                inset -4px -4px 8px #ffffff;
+        }
+
+        .success {
+            color: #166534;
+
+            background: #dcfce7;
+
+            box-shadow:
+                inset 4px 4px 8px #b7d7c0,
+                inset -4px -4px 8px #ffffff;
+        }
+
+        .error ul {
+            padding-left: 20px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+
+            font-size: 14px;
+
             font-weight: bold;
-            color: #333;
+
+            margin-bottom: 9px;
+
+            color: #243b53;
+        }
+
+        .required {
+            color: #1769aa;
         }
 
         input,
         textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
-        }
 
-        textarea {
-            min-height: 120px;
-            resize: vertical;
+            border: none;
+
+            outline: none;
+
+            background: #dbeafe;
+
+            color: #243b53;
+
+            font-size: 15px;
+
+            padding: 15px 17px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                inset 6px 6px 12px #b8c9dc,
+                inset -6px -6px 12px #ffffff;
+
+            transition: 0.2s ease;
         }
 
         input:focus,
         textarea:focus {
-            outline: none;
-            border-color: #007bff;
+            box-shadow:
+                inset 3px 3px 7px #b8c9dc,
+                inset -3px -3px 7px #ffffff;
+        }
+
+        textarea {
+            min-height: 130px;
+
+            resize: vertical;
+
+            line-height: 1.5;
+        }
+
+        .buttons {
+            display: flex;
+
+            gap: 15px;
+
+            margin-top: 30px;
         }
 
         .btn {
+            flex: 1;
+
             border: none;
-            background: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
+
+            text-decoration: none;
+
+            text-align: center;
+
+            padding: 15px 20px;
+
+            border-radius: 15px;
+
             font-size: 15px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
         }
 
         .btn:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
         }
 
-        .back {
-            display: inline-block;
-            margin-left: 10px;
+        .btn-cancel {
+            color: #243b53;
+
+            background: #dbeafe;
+
+            box-shadow:
+                7px 7px 14px #b8c9dc,
+                -7px -7px 14px #ffffff;
+        }
+
+        .btn-dashboard {
+            color: #1769aa;
+
+            background: #dbeafe;
+
+            box-shadow:
+                7px 7px 14px #b8c9dc,
+                -7px -7px 14px #ffffff;
+        }
+
+        .btn-update {
+            color: white;
+
+            background: #1769aa;
+
+            box-shadow:
+                7px 7px 14px #b8c9dc,
+                -7px -7px 14px #ffffff;
+        }
+
+        .btn-update:hover {
+            background: #174a7e;
+        }
+
+        .back-link {
+            display: block;
+
+            text-align: center;
+
+            margin-top: 25px;
+
+            color: #1769aa;
+
             text-decoration: none;
-            color: #555;
+
+            font-size: 14px;
+
+            font-weight: bold;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .back-link:hover {
+            text-decoration: underline;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        @media (max-width: 600px) {
+
+            .container {
+                padding: 25px 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
 
     </style>
@@ -218,85 +430,148 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <body>
 
-<div class="container">
+    <div class="container">
 
-    <h1>Edit Subject</h1>
+        <div class="header">
 
-    <?php if ($error !== ""): ?>
+            <div class="icon">
+                ✏️
+            </div>
 
-        <div class="error">
-            <?php echo htmlspecialchars($error); ?>
-        </div>
+            <h1>Edit Subject</h1>
 
-    <?php endif; ?>
-
-    <?php if ($success !== ""): ?>
-
-        <div class="success">
-            <?php echo htmlspecialchars($success); ?>
-        </div>
-
-    <?php endif; ?>
-
-    <form method="POST">
-
-        <div class="form-group">
-
-            <label for="subject_code">
-                Subject Code
-            </label>
-
-            <input
-                type="text"
-                id="subject_code"
-                name="subject_code"
-                value="<?php echo htmlspecialchars($subject_code); ?>"
-                required
-            >
+            <p class="subtitle">
+                Update subject information
+            </p>
 
         </div>
 
-        <div class="form-group">
 
-            <label for="subject_name">
-                Subject Name
-            </label>
+        <?php if (!empty($errors)): ?>
 
-            <input
-                type="text"
-                id="subject_name"
-                name="subject_name"
-                value="<?php echo htmlspecialchars($subject_name); ?>"
-                required
-            >
+            <div class="message error">
 
-        </div>
+                <ul>
 
-        <div class="form-group">
+                    <?php foreach ($errors as $error): ?>
 
-            <label for="description">
-                Description
-            </label>
+                        <li>
+                            <?= htmlspecialchars($error) ?>
+                        </li>
 
-            <textarea
-                id="description"
-                name="description"
-            ><?php echo htmlspecialchars($description ?? ""); ?></textarea>
+                    <?php endforeach; ?>
 
-        </div>
+                </ul>
 
-        <button type="submit" class="btn">
-            Update Subject
-        </button>
+            </div>
 
-        <a href="index.php" class="back">
-            Cancel
+        <?php endif; ?>
+
+
+        <?php if ($success): ?>
+
+            <div class="message success">
+
+                <?= htmlspecialchars($success) ?>
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <form method="POST">
+
+            <!-- Subject Name -->
+
+            <div class="form-group">
+
+                <label for="subject_name">
+                    Subject Name
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="subject_name"
+                    name="subject_name"
+                    value="<?= htmlspecialchars($subject_name) ?>"
+                    placeholder="Enter subject name"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Subject Code -->
+
+            <div class="form-group">
+
+                <label for="subject_code">
+                    Subject Code
+                    <span class="required">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="subject_code"
+                    name="subject_code"
+                    value="<?= htmlspecialchars($subject_code) ?>"
+                    placeholder="Enter subject code"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Description -->
+
+            <div class="form-group">
+
+                <label for="description">
+                    Description
+                </label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                    placeholder="Enter subject description..."
+                ><?= htmlspecialchars($description) ?></textarea>
+
+            </div>
+
+
+            <!-- Buttons -->
+
+            <div class="buttons">
+
+                <a href="index.php"
+                   class="btn btn-cancel">
+                    ← Cancel
+                </a>
+
+                <a href="../../dashboard/admin.php"
+                   class="btn btn-dashboard">
+                    🏠 Dashboard
+                </a>
+
+                <button type="submit"
+                        class="btn btn-update">
+                    ✏️ Update Subject
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <a href="index.php"
+           class="back-link">
+            ← Back to Subjects
         </a>
 
-    </form>
-
-</div>
+    </div>
 
 </body>
 
 </html>
+
