@@ -7,17 +7,21 @@ require_once "../../config/database.php";
 // Check login
 if (!isset($_SESSION["user_id"])) {
     header("Location: ../../auth/login.php");
-    exit;
+    exit();
 }
 
 // Only admin
 if ($_SESSION["role"] !== "admin") {
     header("Location: ../../auth/login.php");
-    exit;
+    exit();
 }
 
 $error = "";
 $success = "";
+
+$subject_code = "";
+$subject_name = "";
+$description = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
@@ -32,40 +36,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } else {
 
-        // Check if subject code already exists
-        $check = $pdo->prepare("
-            SELECT id
-            FROM subjects
-            WHERE subject_code = ?
-        ");
+        try {
 
-        $check->execute([$subject_code]);
-
-        if ($check->fetch()) {
-
-            $error = "This subject code already exists.";
-
-        } else {
-
-            // Insert subject
-            $stmt = $pdo->prepare("
-                INSERT INTO subjects
-                (subject_code, subject_name, description)
-                VALUES (?, ?, ?)
+            // Check duplicate subject code
+            $check = $pdo->prepare("
+                SELECT id
+                FROM subjects
+                WHERE subject_code = ?
             ");
 
-            $stmt->execute([
-                $subject_code,
-                $subject_name,
-                $description
-            ]);
+            $check->execute([$subject_code]);
 
-            $success = "Subject added successfully.";
+            if ($check->fetch()) {
 
-            // Clear form values
-            $subject_code = "";
-            $subject_name = "";
-            $description = "";
+                $error = "This subject code already exists.";
+
+            } else {
+
+                // Insert subject
+                $stmt = $pdo->prepare("
+                    INSERT INTO subjects
+                    (subject_code, subject_name, description)
+                    VALUES (?, ?, ?)
+                ");
+
+                $stmt->execute([
+                    $subject_code,
+                    $subject_name,
+                    $description !== "" ? $description : null
+                ]);
+
+                $success = "Subject added successfully.";
+
+                // Clear form
+                $subject_code = "";
+                $subject_name = "";
+                $description = "";
+            }
+
+        } catch (PDOException $e) {
+
+            $error = "Database Error: " . $e->getMessage();
         }
     }
 }
@@ -90,48 +101,135 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
 
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            padding: 30px;
+            background: #dbeafe;
+            color: #243b53;
         }
 
         .container {
+            width: 100%;
             max-width: 650px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            margin: 50px auto;
+            padding: 20px;
         }
 
-        h1 {
-            margin-bottom: 25px;
-            color: #333;
+        .card {
+            background: #dbeafe;
+            padding: 35px;
+            border-radius: 25px;
+
+            box-shadow:
+                12px 12px 25px #b8c9dc,
+                -12px -12px 25px #ffffff;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .header-content h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-content p {
+            margin: 7px 0 0;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: #243b53;
+            background: #dbeafe;
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+
+            box-shadow:
+                6px 6px 12px #b8c9dc,
+                -6px -6px 12px #ffffff;
+        }
+
+        .back-btn:active {
+            box-shadow:
+                inset 4px 4px 8px #b8c9dc,
+                inset -4px -4px 8px #ffffff;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 22px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #b42318;
+            background: #fbe9e7;
+
+            box-shadow:
+                5px 5px 10px #b8c9dc,
+                -5px -5px 10px #ffffff;
+        }
+
+        .success {
+            color: #166534;
+            background: #dcfce7;
+
+            box-shadow:
+                5px 5px 10px #b8c9dc,
+                -5px -5px 10px #ffffff;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 9px;
             font-weight: bold;
-            color: #333;
         }
 
         input,
         textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            border: none;
+            outline: none;
+
+            background: #dbeafe;
+            color: #243b53;
+
+            padding: 15px;
+            border-radius: 15px;
+
             font-size: 15px;
+
+            box-shadow:
+                inset 5px 5px 10px #b8c9dc,
+                inset -5px -5px 10px #ffffff;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #6b7f93;
+        }
+
+        input:focus,
+        textarea:focus {
+            box-shadow:
+                inset 3px 3px 7px #b8c9dc,
+                inset -3px -3px 7px #ffffff;
         }
 
         textarea {
@@ -139,47 +237,79 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             resize: vertical;
         }
 
-        input:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #007bff;
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
         }
 
         .btn {
+            flex: 1;
             border: none;
-            background: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 15px;
-        }
-
-        .btn:hover {
-            background: #0056b3;
-        }
-
-        .back {
-            display: inline-block;
-            margin-left: 10px;
             text-decoration: none;
-            color: #555;
+            text-align: center;
+            cursor: pointer;
+
+            padding: 15px;
+            border-radius: 15px;
+
+            font-size: 15px;
+            font-weight: bold;
+
+            color: #243b53;
+            background: #dbeafe;
+
+            box-shadow:
+                7px 7px 14px #b8c9dc,
+                -7px -7px 14px #ffffff;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .btn:active {
+            box-shadow:
+                inset 5px 5px 10px #b8c9dc,
+                inset -5px -5px 10px #ffffff;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .btn-primary {
+            color: white;
+            background: #1769aa;
+
+            box-shadow:
+                7px 7px 14px #9bb8d4,
+                -7px -7px 14px #ffffff;
+        }
+
+        .btn-primary:active {
+            box-shadow:
+                inset 5px 5px 10px #0f4f80,
+                inset -5px -5px 10px #3d8ac2;
+        }
+
+        .btn-dashboard {
+            color: white;
+            background: #174a7e;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                margin: 20px auto;
+                padding: 15px;
+            }
+
+            .card {
+                padding: 25px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
         }
 
     </style>
@@ -190,89 +320,133 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <div class="container">
 
-    <h1>Add New Subject</h1>
+    <div class="card">
 
-    <?php if ($error !== ""): ?>
+        <div class="header">
 
-        <div class="error">
-            <?php echo htmlspecialchars($error); ?>
-        </div>
+            <div class="header-content">
 
-    <?php endif; ?>
+                <h1>📚 Add New Subject</h1>
 
-    <?php if ($success !== ""): ?>
+                <p>
+                    Create a new subject for the school.
+                </p>
 
-        <div class="success">
-            <?php echo htmlspecialchars($success); ?>
-        </div>
+            </div>
 
-    <?php endif; ?>
-
-    <form method="POST">
-
-        <div class="form-group">
-
-            <label for="subject_code">
-                Subject Code
-            </label>
-
-            <input
-                type="text"
-                id="subject_code"
-                name="subject_code"
-                placeholder="Example: CS101"
-                value="<?php echo htmlspecialchars($subject_code ?? ""); ?>"
-                required
+            <a
+                href="index.php"
+                class="back-btn"
             >
+                ← Subjects
+            </a>
 
         </div>
 
-        <div class="form-group">
 
-            <label for="subject_name">
-                Subject Name
-            </label>
+        <?php if ($error !== ""): ?>
 
-            <input
-                type="text"
-                id="subject_name"
-                name="subject_name"
-                placeholder="Example: Computer Science"
-                value="<?php echo htmlspecialchars($subject_name ?? ""); ?>"
-                required
-            >
+            <div class="message error">
+                <?= htmlspecialchars($error) ?>
+            </div>
 
-        </div>
+        <?php endif; ?>
 
-        <div class="form-group">
 
-            <label for="description">
-                Description
-            </label>
+        <?php if ($success !== ""): ?>
 
-            <textarea
-                id="description"
-                name="description"
-                placeholder="Enter subject description..."
-            ><?php echo htmlspecialchars($description ?? ""); ?></textarea>
+            <div class="message success">
+                <?= htmlspecialchars($success) ?>
+            </div>
 
-        </div>
+        <?php endif; ?>
 
-        <button type="submit" class="btn">
-            Add Subject
-        </button>
 
-        <a
-            href="index.php"
-            class="back"
-        >
-            Cancel
-        </a>
+        <form method="POST">
 
-    </form>
+            <div class="form-group">
+
+                <label for="subject_code">
+                    Subject Code
+                </label>
+
+                <input
+                    type="text"
+                    id="subject_code"
+                    name="subject_code"
+                    placeholder="Example: CS101"
+                    value="<?= htmlspecialchars($subject_code) ?>"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="subject_name">
+                    Subject Name
+                </label>
+
+                <input
+                    type="text"
+                    id="subject_name"
+                    name="subject_name"
+                    placeholder="Example: Computer Science"
+                    value="<?= htmlspecialchars($subject_name) ?>"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="description">
+                    Description
+                </label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                    placeholder="Enter subject description..."
+                ><?= htmlspecialchars($description) ?></textarea>
+
+            </div>
+
+
+            <div class="actions">
+
+                <a
+                    href="index.php"
+                    class="btn"
+                >
+                    Cancel
+                </a>
+
+                <a
+                    href="../../dashboard/admin.php"
+                    class="btn btn-dashboard"
+                >
+                    ← Dashboard
+                </a>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    ➕ Add Subject
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
 
 </div>
 
 </body>
 
 </html>
+

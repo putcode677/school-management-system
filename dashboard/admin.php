@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 
@@ -16,6 +17,10 @@ $email = $_SESSION["email"] ?? "";
 
 require_once "../config/database.php";
 
+/* =========================
+   LIVE DATABASE COUNTS
+   ========================= */
+
 // Count students
 $stmt = $pdo->query("SELECT COUNT(*) FROM students");
 $total_students = (int) $stmt->fetchColumn();
@@ -23,6 +28,14 @@ $total_students = (int) $stmt->fetchColumn();
 // Count teachers
 $stmt = $pdo->query("SELECT COUNT(*) FROM teachers");
 $total_teachers = (int) $stmt->fetchColumn();
+
+// Count subjects
+$stmt = $pdo->query("SELECT COUNT(*) FROM subjects");
+$total_subjects = (int) $stmt->fetchColumn();
+
+// Count classes
+$stmt = $pdo->query("SELECT COUNT(*) FROM classes");
+$total_classes = (int) $stmt->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -30,9 +43,11 @@ $total_teachers = (int) $stmt->fetchColumn();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Admin Dashboard</title>
 
     <style>
+
         * {
             margin: 0;
             padding: 0;
@@ -46,7 +61,10 @@ $total_teachers = (int) $stmt->fetchColumn();
             min-height: 100vh;
         }
 
-        /* Sidebar */
+        /* =========================
+           SIDEBAR
+           ========================= */
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -54,9 +72,13 @@ $total_teachers = (int) $stmt->fetchColumn();
             width: 250px;
             height: 100vh;
             padding: 25px 18px;
+
             background: #e0e5ec;
-            box-shadow: 8px 8px 18px #bec3c9,
-                        -8px -8px 18px #ffffff;
+
+            box-shadow:
+                8px 8px 18px #bec3c9,
+                -8px -8px 18px #ffffff;
+
             z-index: 1000;
         }
 
@@ -69,14 +91,20 @@ $total_teachers = (int) $stmt->fetchColumn();
             width: 65px;
             height: 65px;
             margin: auto;
+
             border-radius: 50%;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             font-size: 28px;
+
             background: #e0e5ec;
-            box-shadow: 8px 8px 16px #bec3c9,
-                        -8px -8px 16px #ffffff;
+
+            box-shadow:
+                8px 8px 16px #bec3c9,
+                -8px -8px 16px #ffffff;
         }
 
         .logo h2 {
@@ -90,7 +118,10 @@ $total_teachers = (int) $stmt->fetchColumn();
             color: #777;
         }
 
-        /* Menu */
+        /* =========================
+           MENU
+           ========================= */
+
         .menu {
             list-style: none;
         }
@@ -103,10 +134,14 @@ $total_teachers = (int) $stmt->fetchColumn();
             display: flex;
             align-items: center;
             gap: 14px;
+
             padding: 13px 16px;
+
             color: #555;
             text-decoration: none;
+
             border-radius: 15px;
+
             transition: 0.3s;
         }
 
@@ -114,8 +149,10 @@ $total_teachers = (int) $stmt->fetchColumn();
         .menu a.active {
             color: #222;
             font-weight: 600;
-            box-shadow: inset 5px 5px 10px #bec3c9,
-                        inset -5px -5px 10px #ffffff;
+
+            box-shadow:
+                inset 5px 5px 10px #bec3c9,
+                inset -5px -5px 10px #ffffff;
         }
 
         .menu-icon {
@@ -124,17 +161,24 @@ $total_teachers = (int) $stmt->fetchColumn();
             font-size: 18px;
         }
 
-        /* Main */
+        /* =========================
+           MAIN
+           ========================= */
+
         .main {
             margin-left: 250px;
             padding: 30px;
         }
 
-        /* Topbar */
+        /* =========================
+           TOPBAR
+           ========================= */
+
         .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+
             margin-bottom: 30px;
         }
 
@@ -151,24 +195,34 @@ $total_teachers = (int) $stmt->fetchColumn();
             display: flex;
             align-items: center;
             gap: 14px;
+
             padding: 10px 18px;
+
             border-radius: 18px;
-            box-shadow: 7px 7px 14px #bec3c9,
-                        -7px -7px 14px #ffffff;
+
+            box-shadow:
+                7px 7px 14px #bec3c9,
+                -7px -7px 14px #ffffff;
         }
 
         .avatar {
             width: 45px;
             height: 45px;
+
             border-radius: 50%;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             background: #e0e5ec;
+
             font-size: 18px;
             font-weight: bold;
-            box-shadow: inset 4px 4px 8px #bec3c9,
-                        inset -4px -4px 8px #ffffff;
+
+            box-shadow:
+                inset 4px 4px 8px #bec3c9,
+                inset -4px -4px 8px #ffffff;
         }
 
         .profile-info strong {
@@ -181,13 +235,19 @@ $total_teachers = (int) $stmt->fetchColumn();
             color: #777;
         }
 
-        /* Welcome */
+        /* =========================
+           WELCOME
+           ========================= */
+
         .welcome {
             padding: 30px;
             margin-bottom: 30px;
+
             border-radius: 25px;
-            box-shadow: 10px 10px 20px #bec3c9,
-                        -10px -10px 20px #ffffff;
+
+            box-shadow:
+                10px 10px 20px #bec3c9,
+                -10px -10px 20px #ffffff;
         }
 
         .welcome h2 {
@@ -199,20 +259,31 @@ $total_teachers = (int) $stmt->fetchColumn();
             color: #777;
         }
 
-        /* Statistics */
+        /* =========================
+           STATISTICS
+           ========================= */
+
         .stats {
             display: grid;
+
             grid-template-columns: repeat(4, 1fr);
+
             gap: 22px;
+
             margin-bottom: 35px;
         }
 
         .stat-card {
             padding: 25px;
+
             text-align: center;
+
             border-radius: 22px;
-            box-shadow: 8px 8px 18px #bec3c9,
-                        -8px -8px 18px #ffffff;
+
+            box-shadow:
+                8px 8px 18px #bec3c9,
+                -8px -8px 18px #ffffff;
+
             transition: 0.3s;
         }
 
@@ -235,7 +306,10 @@ $total_teachers = (int) $stmt->fetchColumn();
             font-size: 14px;
         }
 
-        /* Section */
+        /* =========================
+           SECTION
+           ========================= */
+
         .section-title {
             margin-bottom: 20px;
         }
@@ -250,21 +324,32 @@ $total_teachers = (int) $stmt->fetchColumn();
             font-size: 14px;
         }
 
-        /* Management Cards */
+        /* =========================
+           MANAGEMENT CARDS
+           ========================= */
+
         .cards {
             display: grid;
+
             grid-template-columns: repeat(4, 1fr);
+
             gap: 22px;
         }
 
         .card {
             display: block;
+
             padding: 25px;
+
             color: #333;
             text-decoration: none;
+
             border-radius: 22px;
-            box-shadow: 8px 8px 18px #bec3c9,
-                        -8px -8px 18px #ffffff;
+
+            box-shadow:
+                8px 8px 18px #bec3c9,
+                -8px -8px 18px #ffffff;
+
             transition: 0.3s;
         }
 
@@ -273,21 +358,28 @@ $total_teachers = (int) $stmt->fetchColumn();
         }
 
         .card:active {
-            box-shadow: inset 5px 5px 10px #bec3c9,
-                        inset -5px -5px 10px #ffffff;
+            box-shadow:
+                inset 5px 5px 10px #bec3c9,
+                inset -5px -5px 10px #ffffff;
         }
 
         .card-icon {
             width: 55px;
             height: 55px;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             margin-bottom: 18px;
+
             border-radius: 16px;
+
             font-size: 25px;
-            box-shadow: inset 4px 4px 8px #bec3c9,
-                        inset -4px -4px 8px #ffffff;
+
+            box-shadow:
+                inset 4px 4px 8px #bec3c9,
+                inset -4px -4px 8px #ffffff;
         }
 
         .card h3 {
@@ -301,7 +393,10 @@ $total_teachers = (int) $stmt->fetchColumn();
             line-height: 1.5;
         }
 
-        /* Logout */
+        /* =========================
+           LOGOUT
+           ========================= */
+
         .logout {
             margin-top: 25px;
         }
@@ -310,23 +405,35 @@ $total_teachers = (int) $stmt->fetchColumn();
             display: flex;
             align-items: center;
             justify-content: center;
+
             gap: 10px;
+
             padding: 14px;
+
             color: #555;
             text-decoration: none;
+
             font-weight: 600;
+
             border-radius: 16px;
-            box-shadow: 7px 7px 14px #bec3c9,
-                        -7px -7px 14px #ffffff;
+
+            box-shadow:
+                7px 7px 14px #bec3c9,
+                -7px -7px 14px #ffffff;
         }
 
         .logout a:active {
-            box-shadow: inset 5px 5px 10px #bec3c9,
-                        inset -5px -5px 10px #ffffff;
+            box-shadow:
+                inset 5px 5px 10px #bec3c9,
+                inset -5px -5px 10px #ffffff;
         }
 
-        /* Responsive */
+        /* =========================
+           RESPONSIVE
+           ========================= */
+
         @media (max-width: 1100px) {
+
             .stats,
             .cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -334,6 +441,7 @@ $total_teachers = (int) $stmt->fetchColumn();
         }
 
         @media (max-width: 800px) {
+
             .sidebar {
                 width: 80px;
                 padding: 20px 10px;
@@ -362,6 +470,7 @@ $total_teachers = (int) $stmt->fetchColumn();
         }
 
         @media (max-width: 600px) {
+
             .stats,
             .cards {
                 grid-template-columns: 1fr;
@@ -376,19 +485,30 @@ $total_teachers = (int) $stmt->fetchColumn();
                 width: 100%;
             }
         }
+
     </style>
 </head>
 
 <body>
 
-    <!-- Sidebar -->
+    <!-- =========================
+         SIDEBAR
+         ========================= -->
+
     <aside class="sidebar">
 
         <div class="logo">
-            <div class="logo-icon">🏫</div>
+
+            <div class="logo-icon">
+                🏫
+            </div>
+
             <h2>School Admin</h2>
+
             <p>Management System</p>
+
         </div>
+
 
         <ul class="menu">
 
@@ -399,12 +519,14 @@ $total_teachers = (int) $stmt->fetchColumn();
                 </a>
             </li>
 
+
             <li>
                 <a href="../admin/students/index.php">
                     <div class="menu-icon">🎓</div>
                     <span>Students</span>
                 </a>
             </li>
+
 
             <li>
                 <a href="../admin/teachers/index.php">
@@ -413,6 +535,7 @@ $total_teachers = (int) $stmt->fetchColumn();
                 </a>
             </li>
 
+
             <li>
                 <a href="#">
                     <div class="menu-icon">👨‍👩‍👧</div>
@@ -420,19 +543,24 @@ $total_teachers = (int) $stmt->fetchColumn();
                 </a>
             </li>
 
+
+            <!-- SUBJECTS -->
             <li>
-                <a href="#">
+                <a href="../admin/subjects/index.php">
                     <div class="menu-icon">📚</div>
                     <span>Subjects</span>
                 </a>
             </li>
 
+
+            <!-- CLASSES -->
             <li>
-                <a href="#">
+                <a href="../admin/classes/index.php">
                     <div class="menu-icon">🏫</div>
                     <span>Classes</span>
                 </a>
             </li>
+
 
             <li>
                 <a href="#">
@@ -441,12 +569,14 @@ $total_teachers = (int) $stmt->fetchColumn();
                 </a>
             </li>
 
+
             <li>
                 <a href="#">
                     <div class="menu-icon">📊</div>
                     <span>Results</span>
                 </a>
             </li>
+
 
             <li>
                 <a href="#">
@@ -457,36 +587,71 @@ $total_teachers = (int) $stmt->fetchColumn();
 
         </ul>
 
+
         <div class="logout">
+
             <a href="../auth/logout.php">
+
                 <div>🚪</div>
+
                 <span>Logout</span>
+
             </a>
+
         </div>
 
     </aside>
 
 
-    <!-- Main Content -->
+    <!-- =========================
+         MAIN CONTENT
+         ========================= -->
+
     <main class="main">
 
-        <!-- Topbar -->
+
+        <!-- TOPBAR -->
+
         <div class="topbar">
 
             <div>
-                <h1>Admin Dashboard</h1>
-                <p>Manage your school system from one place.</p>
+
+                <h1>
+                    Admin Dashboard
+                </h1>
+
+                <p>
+                    Manage your school system from one place.
+                </p>
+
             </div>
+
 
             <div class="admin-profile">
 
                 <div class="avatar">
-                    <?php echo strtoupper(substr($full_name, 0, 1)); ?>
+
+                    <?php
+                    echo strtoupper(substr($full_name, 0, 1));
+                    ?>
+
                 </div>
 
+
                 <div class="profile-info">
-                    <strong><?php echo htmlspecialchars($full_name); ?></strong>
-                    <span><?php echo htmlspecialchars($email); ?></span>
+
+                    <strong>
+                        <?php
+                        echo htmlspecialchars($full_name);
+                        ?>
+                    </strong>
+
+                    <span>
+                        <?php
+                        echo htmlspecialchars($email);
+                        ?>
+                    </span>
+
                 </div>
 
             </div>
@@ -494,11 +659,14 @@ $total_teachers = (int) $stmt->fetchColumn();
         </div>
 
 
-        <!-- Welcome -->
+        <!-- WELCOME -->
+
         <section class="welcome">
 
             <h2>
-                Welcome back, <?php echo htmlspecialchars($full_name); ?> 👋
+                Welcome back,
+                <?php echo htmlspecialchars($full_name); ?>
+                👋
             </h2>
 
             <p>
@@ -508,90 +676,284 @@ $total_teachers = (int) $stmt->fetchColumn();
         </section>
 
 
-        <!-- Statistics -->
+        <!-- =========================
+             LIVE STATISTICS
+             ========================= -->
+
         <div class="stats">
 
-            <div class="stat-card">
-                <div class="stat-icon">🎓</div>
-                <h3><?php echo $total_students; ?></h3>
-                <p>Total Students</p>
-            </div>
+
+            <!-- STUDENTS -->
 
             <div class="stat-card">
-                <div class="stat-icon">👨‍🏫</div>
-                <h3><?php echo $total_teachers; ?></h3>
-                <p>Total Teachers</p>
+
+                <div class="stat-icon">
+                    🎓
+                </div>
+
+                <h3>
+                    <?php echo $total_students; ?>
+                </h3>
+
+                <p>
+                    Total Students
+                </p>
+
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">👨‍👩‍👧</div>
-                <h3>0</h3>
-                <p>Total Parents</p>
-            </div>
+
+            <!-- TEACHERS -->
 
             <div class="stat-card">
-                <div class="stat-icon">📚</div>
-                <h3>0</h3>
-                <p>Total Subjects</p>
+
+                <div class="stat-icon">
+                    👨‍🏫
+                </div>
+
+                <h3>
+                    <?php echo $total_teachers; ?>
+                </h3>
+
+                <p>
+                    Total Teachers
+                </p>
+
+            </div>
+
+
+            <!-- SUBJECTS -->
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    📚
+                </div>
+
+                <h3>
+                    <?php echo $total_subjects; ?>
+                </h3>
+
+                <p>
+                    Total Subjects
+                </p>
+
+            </div>
+
+
+            <!-- CLASSES -->
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🏫
+                </div>
+
+                <h3>
+                    <?php echo $total_classes; ?>
+                </h3>
+
+                <p>
+                    Total Classes
+                </p>
+
             </div>
 
         </div>
 
 
-        <!-- Management -->
+        <!-- =========================
+             SCHOOL MANAGEMENT
+             ========================= -->
+
         <div class="section-title">
-            <h2>School Management</h2>
-            <p>Manage different sections of your school.</p>
+
+            <h2>
+                School Management
+            </h2>
+
+            <p>
+                Manage different sections of your school.
+            </p>
+
         </div>
+
 
         <div class="cards">
 
-            <a href="../admin/students/index.php" class="card">
-                <div class="card-icon">🎓</div>
-                <h3>Students</h3>
-                <p>Add, edit, view and manage student information.</p>
+
+            <!-- STUDENTS -->
+
+            <a
+                href="../admin/students/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    🎓
+                </div>
+
+                <h3>
+                    Students
+                </h3>
+
+                <p>
+                    Add, edit, view and manage student information.
+                </p>
+
             </a>
 
-            <a href="../admin/teachers/index.php" class="card">
-                <div class="card-icon">👨‍🏫</div>
-                <h3>Teachers</h3>
-                <p>Manage teachers, employee information and specialization.</p>
+
+            <!-- TEACHERS -->
+
+            <a
+                href="../admin/teachers/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    👨‍🏫
+                </div>
+
+                <h3>
+                    Teachers
+                </h3>
+
+                <p>
+                    Manage teachers, employee information and specialization.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">👨‍👩‍👧</div>
-                <h3>Parents</h3>
-                <p>Manage parent information and student relationships.</p>
+
+            <!-- PARENTS -->
+
+            <a
+                href="#"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    👨‍👩‍👧
+                </div>
+
+                <h3>
+                    Parents
+                </h3>
+
+                <p>
+                    Manage parent information and student relationships.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">📚</div>
-                <h3>Subjects</h3>
-                <p>Create and manage school subjects.</p>
+
+            <!-- SUBJECTS -->
+
+            <a
+                href="../admin/subjects/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    📚
+                </div>
+
+                <h3>
+                    Subjects
+                </h3>
+
+                <p>
+                    Create and manage school subjects.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">🏫</div>
-                <h3>Classes</h3>
-                <p>Manage classes and classroom information.</p>
+
+            <!-- CLASSES -->
+
+            <a
+                href="../admin/classes/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    🏫
+                </div>
+
+                <h3>
+                    Classes
+                </h3>
+
+                <p>
+                    Manage classes and classroom information.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">📋</div>
-                <h3>Attendance</h3>
-                <p>Monitor and manage student attendance.</p>
+
+            <!-- ATTENDANCE -->
+
+            <a
+                href="#"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    📋
+                </div>
+
+                <h3>
+                    Attendance
+                </h3>
+
+                <p>
+                    Monitor and manage student attendance.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">📊</div>
-                <h3>Results</h3>
-                <p>Manage student academic results and performance.</p>
+
+            <!-- RESULTS -->
+
+            <a
+                href="#"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    📊
+                </div>
+
+                <h3>
+                    Results
+                </h3>
+
+                <p>
+                    Manage student academic results and performance.
+                </p>
+
             </a>
 
-            <a href="#" class="card">
-                <div class="card-icon">⚙️</div>
-                <h3>Settings</h3>
-                <p>Configure system settings and administration options.</p>
+
+            <!-- SETTINGS -->
+
+            <a
+                href="#"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    ⚙️
+                </div>
+
+                <h3>
+                    Settings
+                </h3>
+
+                <p>
+                    Configure system settings and administration options.
+                </p>
+
             </a>
 
         </div>
@@ -600,3 +962,4 @@ $total_teachers = (int) $stmt->fetchColumn();
 
 </body>
 </html>
+
