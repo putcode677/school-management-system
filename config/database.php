@@ -1,13 +1,14 @@
 <?php
 
 $host = "localhost";
+$port = "5432";
 $dbname = "school_management_system";
-$username = "root";
-$password = "";
+$username = "school_admin";
+$password = "admin1234";
 
 try {
     $pdo = new PDO(
-        "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+        "pgsql:host=$host;port=$port;dbname=$dbname",
         $username,
         $password
     );
