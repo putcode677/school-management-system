@@ -1,14 +1,13 @@
 <?php
 session_start();
-require_once "../../config/database.php";
 
-// Check admin login
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../../auth/login.php");
-    exit();
+    http_response_code(403);
+    exit("Forbidden");
 }
 
-// Get students
+require_once "../../config/database.php";
+
 $sql = "SELECT
             students.id,
             students.student_number,
@@ -31,216 +30,69 @@ $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Students | School Management System</title>
-
-    <link rel="stylesheet"
-          href="../../assets/css/style.css">
-
-</head>
-
-<body>
-
-<div class="container">
-
-    <!-- PAGE HEADER -->
-
-    <div class="page-header">
-
-        <div>
-
-            <h1>Students</h1>
-
-            <p>
-                Manage all students in the school.
-            </p>
-
-        </div>
-
-        <a href="add.php" class="btn">
-            + Add Student
-        </a>
-
+<div class="page-header">
+    <div>
+        <h1>Students</h1>
+        <p>Manage all students in the school.</p>
     </div>
-
-
-    <!-- STUDENT COUNT -->
-
-    <div class="card">
-
-        <h2><?= count($students) ?></h2>
-
-        <p>Total Students</p>
-
-    </div>
-
-
-    <!-- STUDENTS TABLE -->
-
-    <?php if (count($students) > 0): ?>
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th>#</th>
-
-                    <th>Student Number</th>
-
-                    <th>Full Name</th>
-
-                    <th>Email</th>
-
-                    <th>Gender</th>
-
-                    <th>Phone</th>
-
-                    <th>Status</th>
-
-                    <th>Actions</th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-            <?php foreach ($students as $student): ?>
-
-                <tr>
-
-                    <td>
-                        <?= htmlspecialchars($student['id']) ?>
-                    </td>
-
-
-                    <td>
-                        <?= htmlspecialchars(
-                            $student['student_number']
-                        ) ?>
-                    </td>
-
-
-                    <td>
-                        <strong>
-                            <?= htmlspecialchars(
-                                $student['full_name']
-                            ) ?>
-                        </strong>
-                    </td>
-
-
-                    <td>
-                        <?= htmlspecialchars(
-                            $student['email']
-                        ) ?>
-                    </td>
-
-
-                    <td>
-                        <?= htmlspecialchars(
-                            $student['gender'] ?? '-'
-                        ) ?>
-                    </td>
-
-
-                    <td>
-                        <?= htmlspecialchars(
-                            $student['phone'] ?? '-'
-                        ) ?>
-                    </td>
-
-
-                    <td>
-
-                        <?php if ($student['status'] === 'active'): ?>
-
-                            <span class="badge badge-success">
-                                Active
-                            </span>
-
-                        <?php else: ?>
-
-                            <span class="badge badge-danger">
-                                <?= htmlspecialchars(
-                                    ucfirst($student['status'])
-                                ) ?>
-                            </span>
-
-                        <?php endif; ?>
-
-                    </td>
-
-
-                    <td>
-
-                        <div class="actions">
-
-                            <a
-                                href="edit.php?id=<?= $student['id'] ?>"
-                                class="btn"
-                            >
-                                Edit
-                            </a>
-
-
-                            <a
-                                href="delete.php?id=<?= $student['id'] ?>"
-                                class="btn btn-danger"
-                                onclick="return confirm(
-                                    'Are you sure you want to delete this student?'
-                                );"
-                            >
-                                Delete
-                            </a>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-            <?php endforeach; ?>
-
-            </tbody>
-
-        </table>
-
-    <?php else: ?>
-
-        <div class="card">
-
-            <h2>No Students Found</h2>
-
-            <p>
-                There are currently no students registered
-                in the system.
-            </p>
-
-            <br>
-
-            <a href="add.php" class="btn">
-                + Add First Student
-            </a>
-
-        </div>
-
-    <?php endif; ?>
-
+    <a href="/school-management-system/admin/students/add.php" class="btn">+ Add Student</a>
 </div>
 
-</body>
+<div class="content-card" style="margin-bottom:22px;">
+    <h2><?= count($students) ?></h2>
+    <p>Total Students</p>
+</div>
 
-</html>
+<?php if (count($students) > 0): ?>
+
+    <div class="content-card">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left; border-bottom:2px solid #b8c9dc;">
+                    <th style="padding:12px;">#</th>
+                    <th style="padding:12px;">Student Number</th>
+                    <th style="padding:12px;">Full Name</th>
+                    <th style="padding:12px;">Email</th>
+                    <th style="padding:12px;">Gender</th>
+                    <th style="padding:12px;">Phone</th>
+                    <th style="padding:12px;">Status</th>
+                    <th style="padding:12px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($students as $student): ?>
+                <tr style="border-bottom:1px solid #dbeafe;">
+                    <td style="padding:12px;"><?= htmlspecialchars($student['id']) ?></td>
+                    <td style="padding:12px;"><?= htmlspecialchars($student['student_number']) ?></td>
+                    <td style="padding:12px;"><strong><?= htmlspecialchars($student['full_name']) ?></strong></td>
+                    <td style="padding:12px;"><?= htmlspecialchars($student['email']) ?></td>
+                    <td style="padding:12px;"><?= htmlspecialchars($student['gender'] ?? '-') ?></td>
+                    <td style="padding:12px;"><?= htmlspecialchars($student['phone'] ?? '-') ?></td>
+                    <td style="padding:12px;">
+                        <?php if ($student['status'] === 'active'): ?>
+                            <span style="color:#166534;">● Active</span>
+                        <?php else: ?>
+                            <span style="color:#991b1b;">● <?= htmlspecialchars(ucfirst($student['status'])) ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="padding:12px;">
+                        <a href="/school-management-system/admin/students/edit.php?id=<?= $student['id'] ?>">Edit</a> |
+                        <a href="/school-management-system/admin/students/delete.php?id=<?= $student['id'] ?>"
+                           onclick="return confirm('Are you sure you want to delete this student?');">Delete</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+<?php else: ?>
+
+    <div class="content-card">
+        <h2>No Students Found</h2>
+        <p>There are currently no students registered in the system.</p>
+        <br>
+        <a href="/school-management-system/admin/students/add.php" class="btn">+ Add First Student</a>
+    </div>
+
+<?php endif; ?>
