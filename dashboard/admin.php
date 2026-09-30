@@ -35,6 +35,10 @@ $total_subjects = (int) $stmt->fetchColumn();
 // Count classes
 $stmt = $pdo->query("SELECT COUNT(*) FROM classes");
 $total_classes = (int) $stmt->fetchColumn();
+
+// Count parents
+$stmt = $pdo->query("SELECT COUNT(*) FROM parents");
+$total_parents = (int) $stmt->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -536,7 +540,7 @@ $total_classes = (int) $stmt->fetchColumn();
 
 
             <li>
-                <a href="#">
+                <a href="../admin/parents/index.php">
                     <div class="menu-icon">👨‍👩‍👧</div>
                     <span>Parents</span>
                 </a>
@@ -757,6 +761,25 @@ $total_classes = (int) $stmt->fetchColumn();
 
             </div>
 
+
+            <!-- PARENTS -->
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    👨‍👩‍👧
+                </div>
+
+                <h3>
+                    <?php echo $total_parents; ?>
+                </h3>
+
+                <p>
+                    Total Parents
+                </p>
+
+            </div>
+
         </div>
 
 
@@ -827,7 +850,7 @@ $total_classes = (int) $stmt->fetchColumn();
             <!-- PARENTS -->
 
             <a
-                href="#"
+                href="../admin/parents/index.php"
                 class="card"
             >
 
@@ -961,4 +984,3 @@ $total_classes = (int) $stmt->fetchColumn();
 
 </body>
 </html>
-
