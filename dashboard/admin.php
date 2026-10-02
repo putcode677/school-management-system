@@ -536,12 +536,11 @@ $total_classes = (int) $stmt->fetchColumn();
 
 
             <li>
-                <a href="#">
-                    <div class="menu-icon">👨‍👩‍👧</div>
-                    <span>Parents</span>
-                </a>
-            </li>
-
+    <a href="../admin/parents/index.php">
+        <div class="menu-icon">👨‍👩‍👧</div>
+        <span>Parents</span>
+    </a>
+</li>
 
             <!-- SUBJECTS -->
             <li>
@@ -827,10 +826,9 @@ $total_classes = (int) $stmt->fetchColumn();
             <!-- PARENTS -->
 
             <a
-                href="#"
-                class="card"
-            >
-
+    href="../admin/parents/index.php"
+    class="card"
+>
                 <div class="card-icon">
                     👨‍👩‍👧
                 </div>
