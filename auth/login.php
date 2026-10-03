@@ -909,13 +909,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </div>
 
 
-            <a
-                href="register.php"
-                class="register-button"
-            >
-                👤＋ &nbsp; Create Account
-            </a>
-
 
         </form>
 
