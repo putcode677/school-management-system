@@ -699,7 +699,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="form-group">
 
             <label for="credential">
-                Login ID / Email
+                login ID
             </label>
 
             <div class="input-wrapper">
