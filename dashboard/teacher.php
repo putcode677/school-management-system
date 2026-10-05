@@ -51,30 +51,20 @@ try {
 $full_name = $teacher["full_name"];
 $email = $teacher["email"];
 $employee_number = $teacher["employee_number"];
-$phone = $teacher["phone"] ?? "Not provided";
-$address = $teacher["address"] ?? "Not provided";
 $specialization = $teacher["specialization"] ?? "Not specified";
-$hire_date = $teacher["hire_date"] ?? null;
-$status = $teacher["status"] ?? "active";
-
-$formatted_hire_date = "Not provided";
-
-if (!empty($hire_date)) {
-    $formatted_hire_date = date("d M Y", strtotime($hire_date));
-}
 
 $name_parts = explode(" ", trim($full_name));
 $initials = "";
 
 foreach ($name_parts as $part) {
-
     if ($part !== "") {
         $initials .= strtoupper(substr($part, 0, 1));
     }
-
 }
 
 $initials = substr($initials, 0, 2);
+
+$page = $_GET["page"] ?? "dashboard";
 
 ?>
 
@@ -112,10 +102,13 @@ $initials = substr($initials, 0, 2);
 
         .sidebar {
             width: 250px;
+            min-height: 100vh;
             padding: 25px 15px;
             background: #dbeafe;
-            box-shadow: 8px 8px 16px #b8c9dc,
-                        -8px -8px 16px #ffffff;
+            box-shadow: 8px 0 16px #b8c9dc;
+            position: fixed;
+            left: 0;
+            top: 0;
         }
 
         .logo {
@@ -132,20 +125,21 @@ $initials = substr($initials, 0, 2);
         }
 
         .menu li {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .menu a {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 14px;
+            padding: 12px;
             text-decoration: none;
             color: #1e3a8a;
             border-radius: 15px;
         }
 
-        .menu a:hover {
+        .menu a:hover,
+        .menu a.active {
             box-shadow: inset 5px 5px 10px #b8c9dc,
                         inset -5px -5px 10px #ffffff;
         }
@@ -161,11 +155,13 @@ $initials = substr($initials, 0, 2);
                         -4px -4px 8px #ffffff;
         }
 
-        /* MAIN */
+        /* MAIN CONTENT */
 
         .main {
-            flex: 1;
+            margin-left: 250px;
+            width: calc(100% - 250px);
             padding: 35px;
+            min-height: 100vh;
         }
 
         .header {
@@ -177,6 +173,7 @@ $initials = substr($initials, 0, 2);
 
         .header h1 {
             color: #1e40af;
+            margin-bottom: 5px;
         }
 
         .logout {
@@ -188,32 +185,41 @@ $initials = substr($initials, 0, 2);
                         -5px -5px 10px #ffffff;
         }
 
-        /* PROFILE */
+        /* CONTENT CARD */
 
-        .profile-card {
-            display: flex;
-            align-items: center;
-            gap: 25px;
+        .content {
             padding: 30px;
-            margin-bottom: 30px;
             border-radius: 25px;
             box-shadow: 8px 8px 16px #b8c9dc,
                         -8px -8px 16px #ffffff;
         }
 
+        /* DASHBOARD PROFILE */
+
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 20px;
+            box-shadow: inset 5px 5px 10px #b8c9dc,
+                        inset -5px -5px 10px #ffffff;
+        }
+
         .avatar {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #dbeafe;
-            font-size: 30px;
+            font-size: 26px;
             font-weight: bold;
             color: #2563eb;
-            box-shadow: inset 6px 6px 12px #b8c9dc,
-                        inset -6px -6px 12px #ffffff;
+            box-shadow: 6px 6px 12px #b8c9dc,
+                        -6px -6px 12px #ffffff;
         }
 
         .profile-info h2 {
@@ -230,7 +236,6 @@ $initials = substr($initials, 0, 2);
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin-bottom: 30px;
         }
 
         .stat-card {
@@ -246,34 +251,21 @@ $initials = substr($initials, 0, 2);
             margin-bottom: 8px;
         }
 
-        /* CARDS */
+        /* INNER PAGE */
 
-        .section-title {
+        .page-title {
             margin-bottom: 20px;
+            color: #1e40af;
         }
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .card {
+        .info-box {
             padding: 25px;
-            text-align: center;
             border-radius: 20px;
-            text-decoration: none;
-            color: #1e3a8a;
-            box-shadow: 7px 7px 14px #b8c9dc,
-                        -7px -7px 14px #ffffff;
+            box-shadow: inset 5px 5px 10px #b8c9dc,
+                        inset -5px -5px 10px #ffffff;
         }
 
-        .card:hover {
-            transform: translateY(-3px);
-        }
-
-        .card-icon {
-            font-size: 35px;
+        .info-box p {
             margin-bottom: 12px;
         }
 
@@ -281,8 +273,7 @@ $initials = substr($initials, 0, 2);
 
         @media (max-width: 900px) {
 
-            .stats,
-            .cards {
+            .stats {
                 grid-template-columns: repeat(2, 1fr);
             }
 
@@ -290,21 +281,24 @@ $initials = substr($initials, 0, 2);
 
         @media (max-width: 650px) {
 
-            .container {
-                flex-direction: column;
-            }
-
             .sidebar {
+                position: relative;
                 width: 100%;
-            }
-
-            .stats,
-            .cards {
-                grid-template-columns: 1fr;
+                min-height: auto;
             }
 
             .main {
+                margin-left: 0;
+                width: 100%;
                 padding: 20px;
+            }
+
+            .container {
+                display: block;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
             }
 
         }
@@ -328,65 +322,72 @@ $initials = substr($initials, 0, 2);
         <ul class="menu">
 
             <li>
-                <a href="teacher.php">
+                <a href="teacher.php?page=dashboard"
+                   class="<?= $page === 'dashboard' ? 'active' : '' ?>">
                     <div class="menu-icon">🏠</div>
                     <span>Dashboard</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=classes"
+                   class="<?= $page === 'classes' ? 'active' : '' ?>">
                     <div class="menu-icon">📚</div>
                     <span>My Classes</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=subjects"
+                   class="<?= $page === 'subjects' ? 'active' : '' ?>">
                     <div class="menu-icon">📖</div>
                     <span>My Subjects</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=students"
+                   class="<?= $page === 'students' ? 'active' : '' ?>">
                     <div class="menu-icon">👨‍🎓</div>
                     <span>Students</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=attendance"
+                   class="<?= $page === 'attendance' ? 'active' : '' ?>">
                     <div class="menu-icon">📝</div>
                     <span>Attendance</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=assignments"
+                   class="<?= $page === 'assignments' ? 'active' : '' ?>">
                     <div class="menu-icon">📋</div>
                     <span>Assignments</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=results"
+                   class="<?= $page === 'results' ? 'active' : '' ?>">
                     <div class="menu-icon">📊</div>
                     <span>Results</span>
                 </a>
             </li>
 
             <li>
-                <a href="#">
+                <a href="teacher.php?page=timetable"
+                   class="<?= $page === 'timetable' ? 'active' : '' ?>">
                     <div class="menu-icon">🗓️</div>
                     <span>Timetable</span>
                 </a>
             </li>
 
-            <!-- FIXED MY PROFILE -->
-
             <li>
-                <a href="../teacher/profile.php">
+                <a href="teacher.php?page=profile"
+                   class="<?= $page === 'profile' ? 'active' : '' ?>">
                     <div class="menu-icon">👤</div>
                     <span>My Profile</span>
                 </a>
@@ -397,7 +398,7 @@ $initials = substr($initials, 0, 2);
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- RIGHT CONTENT -->
 
     <main class="main">
 
@@ -415,159 +416,179 @@ $initials = substr($initials, 0, 2);
         </div>
 
 
-        <!-- PROFILE -->
+        <div class="content">
 
-        <div class="profile-card">
+            <?php if ($page === "dashboard"): ?>
 
-            <div class="avatar">
-                <?= htmlspecialchars($initials) ?>
-            </div>
+                <div class="profile-card">
 
-            <div class="profile-info">
+                    <div class="avatar">
+                        <?= htmlspecialchars($initials) ?>
+                    </div>
 
-                <h2><?= htmlspecialchars($full_name) ?></h2>
+                    <div class="profile-info">
 
-                <p>
-                    <strong>Employee Number:</strong>
-                    <?= htmlspecialchars($employee_number) ?>
-                </p>
+                        <h2><?= htmlspecialchars($full_name) ?></h2>
 
-                <p>
-                    <strong>Email:</strong>
-                    <?= htmlspecialchars($email) ?>
-                </p>
+                        <p>
+                            <strong>Employee Number:</strong>
+                            <?= htmlspecialchars($employee_number) ?>
+                        </p>
 
-                <p>
-                    <strong>Specialization:</strong>
-                    <?= htmlspecialchars($specialization) ?>
-                </p>
+                        <p>
+                            <strong>Email:</strong>
+                            <?= htmlspecialchars($email) ?>
+                        </p>
 
-            </div>
+                        <p>
+                            <strong>Specialization:</strong>
+                            <?= htmlspecialchars($specialization) ?>
+                        </p>
 
-        </div>
+                    </div>
 
+                </div>
 
-        <!-- STATS -->
 
-        <div class="stats">
+                <div class="stats">
 
-            <div class="stat-card">
-                <h2>0</h2>
-                <p>My Classes</p>
-            </div>
+                    <div class="stat-card">
+                        <h2>0</h2>
+                        <p>My Classes</p>
+                    </div>
 
-            <div class="stat-card">
-                <h2>0</h2>
-                <p>My Subjects</p>
-            </div>
+                    <div class="stat-card">
+                        <h2>0</h2>
+                        <p>My Subjects</p>
+                    </div>
 
-            <div class="stat-card">
-                <h2>0</h2>
-                <p>Students</p>
-            </div>
+                    <div class="stat-card">
+                        <h2>0</h2>
+                        <p>Students</p>
+                    </div>
 
-            <div class="stat-card">
-                <h2>0</h2>
-                <p>Assignments</p>
-            </div>
+                    <div class="stat-card">
+                        <h2>0</h2>
+                        <p>Assignments</p>
+                    </div>
 
-        </div>
+                </div>
 
 
-        <!-- MANAGEMENT -->
+            <?php elseif ($page === "profile"): ?>
 
-        <h2 class="section-title">
-            Teacher Management
-        </h2>
+                <h2 class="page-title">My Profile</h2>
 
-        <div class="cards">
+                <div class="info-box">
 
-            <a href="#" class="card">
+                    <p>
+                        <strong>Full Name:</strong>
+                        <?= htmlspecialchars($teacher["full_name"]) ?>
+                    </p>
 
-                <div class="card-icon">📚</div>
+                    <p>
+                        <strong>Employee Number:</strong>
+                        <?= htmlspecialchars($teacher["employee_number"]) ?>
+                    </p>
 
-                <h3>My Classes</h3>
+                    <p>
+                        <strong>Email:</strong>
+                        <?= htmlspecialchars($teacher["email"]) ?>
+                    </p>
 
-                <p>View assigned classes</p>
+                    <p>
+                        <strong>Phone:</strong>
+                        <?= htmlspecialchars($teacher["phone"] ?? "Not provided") ?>
+                    </p>
 
-            </a>
+                    <p>
+                        <strong>Address:</strong>
+                        <?= htmlspecialchars($teacher["address"] ?? "Not provided") ?>
+                    </p>
 
+                    <p>
+                        <strong>Specialization:</strong>
+                        <?= htmlspecialchars($teacher["specialization"] ?? "Not specified") ?>
+                    </p>
 
-            <a href="#" class="card">
+                    <p>
+                        <strong>Hire Date:</strong>
+                        <?= !empty($teacher["hire_date"])
+                            ? date("d M Y", strtotime($teacher["hire_date"]))
+                            : "Not provided" ?>
+                    </p>
 
-                <div class="card-icon">📖</div>
+                    <p>
+                        <strong>Status:</strong>
+                        <?= htmlspecialchars($teacher["status"] ?? "active") ?>
+                    </p>
 
-                <h3>My Subjects</h3>
+                </div>
 
-                <p>View teaching subjects</p>
 
-            </a>
+            <?php elseif ($page === "classes"): ?>
 
+                <h2 class="page-title">My Classes</h2>
 
-            <a href="#" class="card">
+                <div class="info-box">
+                    <p>My Classes content will appear here.</p>
+                </div>
 
-                <div class="card-icon">👨‍🎓</div>
 
-                <h3>Students</h3>
+            <?php elseif ($page === "subjects"): ?>
 
-                <p>View my students</p>
+                <h2 class="page-title">My Subjects</h2>
 
-            </a>
+                <div class="info-box">
+                    <p>My Subjects content will appear here.</p>
+                </div>
 
 
-            <a href="#" class="card">
+            <?php elseif ($page === "students"): ?>
 
-                <div class="card-icon">📝</div>
+                <h2 class="page-title">Students</h2>
 
-                <h3>Attendance</h3>
+                <div class="info-box">
+                    <p>Students content will appear here.</p>
+                </div>
 
-                <p>Manage attendance</p>
 
-            </a>
+            <?php elseif ($page === "attendance"): ?>
 
+                <h2 class="page-title">Attendance</h2>
 
-            <a href="#" class="card">
+                <div class="info-box">
+                    <p>Attendance content will appear here.</p>
+                </div>
 
-                <div class="card-icon">📋</div>
 
-                <h3>Assignments</h3>
+            <?php elseif ($page === "assignments"): ?>
 
-                <p>Manage assignments</p>
+                <h2 class="page-title">Assignments</h2>
 
-            </a>
+                <div class="info-box">
+                    <p>Assignments content will appear here.</p>
+                </div>
 
 
-            <a href="#" class="card">
+            <?php elseif ($page === "results"): ?>
 
-                <div class="card-icon">📊</div>
+                <h2 class="page-title">Results</h2>
 
-                <h3>Results</h3>
+                <div class="info-box">
+                    <p>Results content will appear here.</p>
+                </div>
 
-                <p>Manage student results</p>
 
-            </a>
+            <?php elseif ($page === "timetable"): ?>
 
+                <h2 class="page-title">Timetable</h2>
 
-            <a href="#" class="card">
+                <div class="info-box">
+                    <p>Timetable content will appear here.</p>
+                </div>
 
-                <div class="card-icon">🗓️</div>
-
-                <h3>Timetable</h3>
-
-                <p>View timetable</p>
-
-            </a>
-
-
-            <a href="../teacher/profile.php" class="card">
-
-                <div class="card-icon">👤</div>
-
-                <h3>My Profile</h3>
-
-                <p>View my profile</p>
-
-            </a>
+            <?php endif; ?>
 
         </div>
 
