@@ -104,6 +104,72 @@ try {
     die("Database Error: " . $e->getMessage());
 }
 
+
+/* GET TEACHER SUBJECTS */
+
+$subjects = [];
+
+try {
+
+    $subject_stmt = $pdo->prepare(
+        "SELECT
+            subjects.id,
+            subjects.subject_code,
+            subjects.subject_name,
+            subjects.description
+         FROM teacher_subjects
+         INNER JOIN subjects
+            ON teacher_subjects.subject_id = subjects.id
+         WHERE teacher_subjects.teacher_id = ?
+         ORDER BY subjects.subject_name ASC"
+    );
+
+    $subject_stmt->execute([$teacher["id"]]);
+
+    $subjects = $subject_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+
+    die("Database Error: " . $e->getMessage());
+}
+
+
+/* GET TEACHER STUDENTS */
+
+$students = [];
+
+try {
+
+    $student_stmt = $pdo->prepare(
+        "SELECT DISTINCT
+            students.id,
+            students.student_number,
+            users.full_name,
+            users.email,
+            classes.class_name,
+            classes.class_code
+         FROM teacher_classes
+         INNER JOIN student_classes
+            ON student_classes.class_id = teacher_classes.class_id
+         INNER JOIN students
+            ON students.id = student_classes.student_id
+         INNER JOIN users
+            ON users.id = students.user_id
+         INNER JOIN classes
+            ON classes.id = teacher_classes.class_id
+         WHERE teacher_classes.teacher_id = ?
+         ORDER BY classes.class_name ASC, users.full_name ASC"
+    );
+
+    $student_stmt->execute([$teacher["id"]]);
+
+    $students = $student_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+
+    die("Database Error: " . $e->getMessage());
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -468,6 +534,84 @@ try {
         }
 
 
+        /* STUDENTS */
+
+        .student-table-wrapper {
+
+            overflow-x: auto;
+
+            border-radius: 20px;
+
+            box-shadow:
+                inset 5px 5px 10px #b8c9dc,
+                inset -5px -5px 10px #ffffff;
+
+            padding: 10px;
+        }
+
+        .student-table {
+
+            width: 100%;
+
+            border-collapse: separate;
+
+            border-spacing: 0;
+
+            min-width: 700px;
+        }
+
+        .student-table th {
+
+            padding: 16px;
+
+            text-align: left;
+
+            color: #1e40af;
+
+            font-size: 14px;
+        }
+
+        .student-table td {
+
+            padding: 16px;
+
+            border-top: 1px solid #c5d5e8;
+
+            color: #1e3a8a;
+        }
+
+        .student-number {
+
+            font-weight: bold;
+
+            color: #2563eb;
+        }
+
+        .class-badge {
+
+            display: inline-block;
+
+            padding: 7px 12px;
+
+            border-radius: 12px;
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            box-shadow:
+                3px 3px 6px #b8c9dc,
+                -3px -3px 6px #ffffff;
+        }
+
+        .empty-icon {
+
+            font-size: 40px;
+
+            margin-bottom: 10px;
+        }
+
+
         /* RESPONSIVE */
 
         @media (max-width: 900px) {
@@ -777,7 +921,9 @@ try {
 
                     <div class="stat-card">
 
-                        <h2>0</h2>
+                        <h2>
+                            <?= count($subjects) ?>
+                        </h2>
 
                         <p>My Subjects</p>
 
@@ -786,7 +932,9 @@ try {
 
                     <div class="stat-card">
 
-                        <h2>0</h2>
+                        <h2>
+                            <?= count($students) ?>
+                        </h2>
 
                         <p>Students</p>
 
@@ -1003,81 +1151,321 @@ try {
                 </div>
 
 
-            <!-- OTHER PAGES -->
+            <!-- MY SUBJECTS -->
 
             <?php elseif ($page === "subjects"): ?>
 
-                <h2 class="page-title">My Subjects</h2>
 
-                <div class="info-box">
+                <h2 class="page-title">
 
-                    <p>
-                        My Subjects content will appear here.
-                    </p>
+                    My Subjects
 
-                </div>
+                </h2>
 
+
+                <?php if (empty($subjects)): ?>
+
+
+                    <div class="info-box">
+
+                        <h3>No Subjects Assigned</h3>
+
+                        <p>
+
+                            You currently have no subjects assigned to you.
+
+                        </p>
+
+                    </div>
+
+
+                <?php else: ?>
+
+
+                    <div class="class-grid">
+
+
+                        <?php foreach ($subjects as $subject): ?>
+
+
+                            <div class="class-card">
+
+
+                                <div class="class-icon">
+
+                                    📖
+
+                                </div>
+
+
+                                <h3>
+
+                                    <?= htmlspecialchars(
+                                        $subject["subject_name"]
+                                    ) ?>
+
+                                </h3>
+
+
+                                <p class="class-code">
+
+                                    <?= htmlspecialchars(
+                                        $subject["subject_code"]
+                                    ) ?>
+
+                                </p>
+
+
+                                <p class="description">
+
+                                    <?= !empty($subject["description"])
+                                        ? htmlspecialchars(
+                                            $subject["description"]
+                                        )
+                                        : "No description available." ?>
+
+                                </p>
+
+
+                            </div>
+
+
+                        <?php endforeach; ?>
+
+
+                    </div>
+
+
+                <?php endif; ?>
+
+
+            <!-- STUDENTS -->
 
             <?php elseif ($page === "students"): ?>
 
-                <h2 class="page-title">Students</h2>
 
-                <div class="info-box">
+                <h2 class="page-title">
 
-                    <p>
-                        Students content will appear here.
-                    </p>
+                    My Students
 
-                </div>
+                </h2>
 
+
+                <?php if (empty($students)): ?>
+
+
+                    <div class="info-box">
+
+                        <div class="empty-icon">👨‍🎓</div>
+
+                        <h3>No Students Found</h3>
+
+                        <p>
+
+                            There are currently no students assigned
+                            to your classes.
+
+                        </p>
+
+                    </div>
+
+
+                <?php else: ?>
+
+
+                    <div class="student-table-wrapper">
+
+                        <table class="student-table">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>#</th>
+
+                                    <th>Student Number</th>
+
+                                    <th>Full Name</th>
+
+                                    <th>Email</th>
+
+                                    <th>Class</th>
+
+                                    <th>Code</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                <?php $number = 1; ?>
+
+
+                                <?php foreach ($students as $student): ?>
+
+
+                                    <tr>
+
+                                        <td>
+
+                                            <?= $number++ ?>
+
+                                        </td>
+
+
+                                        <td class="student-number">
+
+                                            <?= htmlspecialchars(
+                                                $student["student_number"]
+                                            ) ?>
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <?= htmlspecialchars(
+                                                $student["full_name"]
+                                            ) ?>
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <?= htmlspecialchars(
+                                                $student["email"]
+                                            ) ?>
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <span class="class-badge">
+
+                                                <?= htmlspecialchars(
+                                                    $student["class_name"]
+                                                ) ?>
+
+                                            </span>
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <?= htmlspecialchars(
+                                                $student["class_code"]
+                                            ) ?>
+
+                                        </td>
+
+                                    </tr>
+
+
+                                <?php endforeach; ?>
+
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+                <?php endif; ?>
+
+
+            <!-- ATTENDANCE -->
 
             <?php elseif ($page === "attendance"): ?>
 
-                <h2 class="page-title">Attendance</h2>
+
+                <h2 class="page-title">
+
+                    Attendance
+
+                </h2>
+
 
                 <div class="info-box">
 
                     <p>
+
                         Attendance content will appear here.
+
                     </p>
 
                 </div>
 
+
+            <!-- ASSIGNMENTS -->
 
             <?php elseif ($page === "assignments"): ?>
 
-                <h2 class="page-title">Assignments</h2>
+
+                <h2 class="page-title">
+
+                    Assignments
+
+                </h2>
+
 
                 <div class="info-box">
 
                     <p>
+
                         Assignments content will appear here.
+
                     </p>
 
                 </div>
 
+
+            <!-- RESULTS -->
 
             <?php elseif ($page === "results"): ?>
 
-                <h2 class="page-title">Results</h2>
+
+                <h2 class="page-title">
+
+                    Results
+
+                </h2>
+
 
                 <div class="info-box">
 
                     <p>
+
                         Results content will appear here.
+
                     </p>
 
                 </div>
 
 
+            <!-- TIMETABLE -->
+
             <?php elseif ($page === "timetable"): ?>
 
-                <h2 class="page-title">Timetable</h2>
+
+                <h2 class="page-title">
+
+                    Timetable
+
+                </h2>
+
 
                 <div class="info-box">
 
                     <p>
+
                         Timetable content will appear here.
+
                     </p>
 
                 </div>
