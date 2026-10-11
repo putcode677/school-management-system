@@ -172,7 +172,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <head>
 
-```
+
 <meta charset="UTF-8">
 
 <meta name="viewport"
@@ -657,7 +657,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
 </style>
-```
+
 
 </head>
 
@@ -665,7 +665,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <div class="login-wrapper">
 
-```
 <div class="logo-container">
 
     <div class="logo">
@@ -786,7 +785,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </form>
 
 </div>
-```
+
 
 </div>
 
