@@ -8,15 +8,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Get classes
+// Get classes with student and teacher counts
 $sql = "SELECT
-            id,
-            class_name,
-            class_code,
-            description,
-            created_at
+            classes.id,
+            classes.class_name,
+            classes.class_code,
+            classes.description,
+            classes.created_at,
+            COUNT(DISTINCT student_classes.student_id) AS student_count,
+            COUNT(DISTINCT teacher_classes.teacher_id) AS teacher_count
         FROM classes
-        ORDER BY id DESC";
+        LEFT JOIN student_classes ON student_classes.class_id = classes.id
+        LEFT JOIN teacher_classes ON teacher_classes.class_id = classes.id
+        GROUP BY classes.id, classes.class_name, classes.class_code, classes.description, classes.created_at
+        ORDER BY classes.class_name ASC";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
@@ -54,14 +59,19 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <h1>Classes</h1>
 
             <p>
-                Manage all classes in the school.
+                Manage all classes and classroom assignments in the school.
             </p>
 
         </div>
 
-        <a href="add.php" class="btn">
-            + Add Class
-        </a>
+        <div style="display:flex; gap:10px;">
+            <a href="../../dashboard/admin.php" class="btn btn-secondary">
+                ← Dashboard
+            </a>
+            <a href="add.php" class="btn">
+                + Add Class
+            </a>
+        </div>
 
     </div>
 
@@ -93,9 +103,11 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <th>Class Code</th>
 
-                    <th>Description</th>
+                    <th>Students</th>
 
-                    <th>Created At</th>
+                    <th>Teachers</th>
+
+                    <th>Description</th>
 
                     <th>Actions</th>
 
@@ -128,29 +140,26 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <td>
 
-                        <?= htmlspecialchars(
-                            $class['class_code']
-                        ) ?>
+                        <span class="badge badge-success">
+                            <?= htmlspecialchars(
+                                $class['class_code']
+                            ) ?>
+                        </span>
 
                     </td>
 
+                    <td>
+                        <?= (int) $class['student_count'] ?> students
+                    </td>
+
+                    <td>
+                        <?= (int) $class['teacher_count'] ?> teachers
+                    </td>
 
                     <td>
 
                         <?= htmlspecialchars(
                             $class['description'] ?? '-'
-                        ) ?>
-
-                    </td>
-
-
-                    <td>
-
-                        <?= htmlspecialchars(
-                            date(
-                                'd M Y',
-                                strtotime($class['created_at'])
-                            )
                         ) ?>
 
                     </td>
@@ -216,4 +225,3 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </body>
 
 </html>
-```
