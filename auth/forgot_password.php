@@ -18,11 +18,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } else {
 
-        // Find user by email
+        // Find user by email (case-insensitive)
         $stmt = $pdo->prepare(
             "SELECT id, full_name, email
              FROM users
-             WHERE email = ?
+             WHERE LOWER(email) = LOWER(?)
              LIMIT 1"
         );
 
@@ -68,13 +68,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ]);
 
             /*
-             * For local testing only.
-             * Later we will send this link by email.
+             * Dynamically construct reset link so it works on any host/path
              */
-
-            $reset_link =
-                "http://localhost/school_management_system/auth/reset_password.php?token="
-                . urlencode($token);
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $dir = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            $reset_link = $protocol . $host . $dir . "/reset_password.php?token=" . urlencode($token);
 
             $message =
                 "Reset token created successfully.<br><br>"
