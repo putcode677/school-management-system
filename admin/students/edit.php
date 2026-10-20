@@ -54,6 +54,14 @@ try {
         exit();
     }
 
+    // Fetch available classes
+    $classes = $pdo->query("SELECT id, class_name, class_code FROM classes ORDER BY class_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch current assigned class
+    $class_stmt = $pdo->prepare("SELECT class_id FROM student_classes WHERE student_id = ? LIMIT 1");
+    $class_stmt->execute([$student_id]);
+    $current_class_id = (int) ($class_stmt->fetchColumn() ?: 0);
+
 } catch (PDOException $e) {
 
     $message = "Database Error: " . $e->getMessage();
@@ -71,6 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST['password'] ?? '';
 
     $student_number = trim($_POST['student_number'] ?? '');
+    $class_id = !empty($_POST['class_id']) ? (int) $_POST['class_id'] : 0;
 
     $date_of_birth = !empty($_POST['date_of_birth'])
         ? $_POST['date_of_birth']
@@ -225,6 +234,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $student_id
                     ]);
 
+                    // Update class assignment
+                    $delClass = $pdo->prepare("DELETE FROM student_classes WHERE student_id = ?");
+                    $delClass->execute([$student_id]);
+
+                    if ($class_id > 0) {
+                        $insClass = $pdo->prepare("INSERT INTO student_classes (student_id, class_id) VALUES (?, ?)");
+                        $insClass->execute([$student_id, $class_id]);
+                    }
 
                     // ===============================
                     // COMMIT
@@ -735,12 +752,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
 
 
-        <a
-            href="index.php"
-            class="btn btn-secondary"
-        >
-            ← Back to Students
-        </a>
+        <div style="display:flex; gap:10px;">
+            <a
+                href="../../dashboard/admin.php"
+                class="btn btn-secondary"
+            >
+                ← Dashboard
+            </a>
+            <a
+                href="index.php"
+                class="btn btn-secondary"
+            >
+                ← Back to Students
+            </a>
+        </div>
 
     </div>
 
@@ -1037,6 +1062,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         >
 
                     </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="class_id">
+                        Class Assignment
+                    </label>
+
+                    <select id="class_id" name="class_id">
+                        <option value="">-- No Class Assigned --</option>
+                        <?php foreach ($classes as $c): ?>
+                            <option
+                                value="<?= (int) $c['id'] ?>"
+                                <?= ($current_class_id === (int) $c['id']) ? 'selected' : '' ?>
+                            >
+                                <?= htmlspecialchars($c['class_name']) ?> (<?= htmlspecialchars($c['class_code']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
 
                 </div>
 

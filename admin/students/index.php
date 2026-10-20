@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Get students
+// Get students with class info
 $sql = "SELECT
             students.id,
             students.student_number,
@@ -19,10 +19,16 @@ $sql = "SELECT
             students.admission_date,
             users.full_name,
             users.email,
-            users.status
+            users.status,
+            classes.class_name,
+            classes.class_code
         FROM students
         INNER JOIN users
             ON students.user_id = users.id
+        LEFT JOIN student_classes
+            ON student_classes.student_id = students.id
+        LEFT JOIN classes
+            ON classes.id = student_classes.class_id
         ORDER BY students.id DESC";
 
 $stmt = $pdo->prepare($sql);
@@ -66,9 +72,14 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         </div>
 
-        <a href="add.php" class="btn">
-            + Add Student
-        </a>
+        <div style="display:flex; gap:10px;">
+            <a href="../../dashboard/admin.php" class="btn btn-secondary">
+                ← Dashboard
+            </a>
+            <a href="add.php" class="btn">
+                + Add Student
+            </a>
+        </div>
 
     </div>
 
@@ -99,6 +110,8 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>Student Number</th>
 
                     <th>Full Name</th>
+
+                    <th>Class</th>
 
                     <th>Email</th>
 
@@ -139,6 +152,16 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 $student['full_name']
                             ) ?>
                         </strong>
+                    </td>
+
+                    <td>
+                        <?php if (!empty($student['class_name'])): ?>
+                            <span class="badge badge-success">
+                                <?= htmlspecialchars($student['class_name']) ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="color:#718096; font-size:12px;">Not Assigned</span>
+                        <?php endif; ?>
                     </td>
 
 

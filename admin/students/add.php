@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require_once "../../config/database.php";
 
@@ -10,12 +10,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $message = "";
 
+// Fetch available classes
+$classes = $pdo->query("SELECT id, class_name, class_code FROM classes ORDER BY class_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $student_number = trim($_POST['student_number']);
+    $class_id = !empty($_POST['class_id']) ? (int) $_POST['class_id'] : 0;
     $date_of_birth = !empty($_POST['date_of_birth'])
         ? $_POST['date_of_birth']
         : null;
@@ -129,6 +133,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $admission_date
                     ]);
 
+                    $student_id = $pdo->lastInsertId();
+
+                    // Assign to class if selected
+                    if ($class_id > 0) {
+                        $classStmt = $pdo->prepare(
+                            "INSERT INTO student_classes (student_id, class_id) VALUES (?, ?)"
+                        );
+                        $classStmt->execute([$student_id, $class_id]);
+                    }
 
                     $pdo->commit();
 
@@ -184,9 +197,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         </div>
 
-        <a href="index.php" class="btn btn-secondary">
-            ← Back
-        </a>
+        <div style="display:flex; gap:10px;">
+            <a href="../../dashboard/admin.php" class="btn btn-secondary">
+                ← Dashboard
+            </a>
+            <a href="index.php" class="btn btn-secondary">
+                ← Back
+            </a>
+        </div>
 
     </div>
 
@@ -373,6 +391,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     >
 
                 </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="class_id">
+                    Assign Class
+                </label>
+
+                <select id="class_id" name="class_id">
+                    <option value="">-- Select Class (Optional) --</option>
+                    <?php foreach ($classes as $c): ?>
+                        <option value="<?= (int) $c['id'] ?>">
+                            <?= htmlspecialchars($c['class_name']) ?> (<?= htmlspecialchars($c['class_code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
 
             </div>
 
