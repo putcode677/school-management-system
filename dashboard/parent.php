@@ -28,6 +28,7 @@ $user_id = $_SESSION["user_id"];
 $stmt = $pdo->prepare("
     SELECT
         parents.id,
+        parents.parent_number,
         parents.phone,
         parents.address,
         parents.occupation,
@@ -64,12 +65,19 @@ $children_stmt = $pdo->prepare("
         students.address,
         students.admission_date,
         users.full_name,
-        users.email
+        users.email,
+        classes.class_name,
+        classes.class_code,
+        student_parents.relationship
     FROM student_parents
     INNER JOIN students
         ON student_parents.student_id = students.id
     INNER JOIN users
         ON students.user_id = users.id
+    LEFT JOIN student_classes
+        ON student_classes.student_id = students.id
+    LEFT JOIN classes
+        ON classes.id = student_classes.class_id
     WHERE student_parents.parent_id = ?
     ORDER BY users.full_name ASC
 ");
@@ -141,8 +149,11 @@ function getInitials($name)
 <style>
 
 /* =====================================================
-   LIQUIDMORPHISM
+   NEUMORPHISM (SOFT UI)
    PARENT DASHBOARD
+   — Soft shadows, raised/inset elements
+   — Same color background + elements
+   — 3D depth via dual shadows
 ===================================================== */
 
 * {
@@ -154,263 +165,123 @@ function getInitials($name)
 
 :root {
 
-    --blue: #38bdf8;
-    --cyan: #22d3ee;
-    --purple: #8b5cf6;
-    --pink: #ec4899;
+    /* Soft blue-gray palette */
+    --bg: #e0e5ec;
 
-    --dark: #071329;
+    --text-dark: #2d3748;
+    --text-mid: #4a5568;
+    --text-light: #718096;
 
-    --text: #ffffff;
+    --shadow-dark: rgba(163, 177, 198, 0.6);
+    --shadow-light: rgba(255, 255, 255, 0.8);
 
-    --muted: rgba(255,255,255,.65);
+    --accent: #667eea;
+    --accent-dark: #5568d3;
+    --accent-light: #7c93f5;
 
-    --glass: rgba(255,255,255,.09);
-
-    --border: rgba(255,255,255,.18);
+    --success: #48bb78;
+    --warning: #ed8936;
+    --danger: #f56565;
 
 }
 
 
 /* =====================================================
-   BODY
+   BODY — soft background
 ===================================================== */
 
 body {
 
     font-family:
         "Segoe UI",
+        "Roboto",
+        "Helvetica Neue",
         Arial,
         sans-serif;
 
     min-height: 100vh;
 
-    color: var(--text);
+    color: var(--text-dark);
 
     overflow-x: hidden;
 
-    background:
+    background: var(--bg);
 
-        radial-gradient(
-            circle at 10% 15%,
-            rgba(34,211,238,.30),
-            transparent 28%
-        ),
-
-        radial-gradient(
-            circle at 90% 10%,
-            rgba(139,92,246,.28),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 80% 85%,
-            rgba(236,72,153,.18),
-            transparent 30%
-        ),
-
-        linear-gradient(
-            135deg,
-            #061225,
-            #0a1d3a,
-            #111a42
-        );
-
-    background-attachment: fixed;
 }
 
 
 /* =====================================================
-   LIQUID BLOBS
-===================================================== */
-
-body::before {
-
-    content: "";
-
-    position: fixed;
-
-    width: 380px;
-    height: 380px;
-
-    top: -120px;
-    left: 300px;
-
-    border-radius:
-        42% 58% 63% 37%
-        / 45% 39% 61% 55%;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.32),
-            rgba(59,130,246,.15)
-        );
-
-    filter: blur(2px);
-
-    animation:
-        liquidOne 12s ease-in-out infinite;
-
-    pointer-events: none;
-
-    z-index: -1;
-}
-
-
-body::after {
-
-    content: "";
-
-    position: fixed;
-
-    width: 330px;
-    height: 330px;
-
-    right: -100px;
-    bottom: -80px;
-
-    border-radius:
-        60% 40% 35% 65%
-        / 50% 55% 45% 50%;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(139,92,246,.35),
-            rgba(236,72,153,.12)
-        );
-
-    filter: blur(3px);
-
-    animation:
-        liquidTwo 14s ease-in-out infinite;
-
-    pointer-events: none;
-
-    z-index: -1;
-}
-
-
-@keyframes liquidOne {
-
-    0%,100% {
-        transform:
-            translate(0,0)
-            rotate(0deg)
-            scale(1);
-    }
-
-    50% {
-        transform:
-            translate(80px,50px)
-            rotate(25deg)
-            scale(1.12);
-    }
-}
-
-
-@keyframes liquidTwo {
-
-    0%,100% {
-        transform:
-            translate(0,0)
-            rotate(0deg)
-            scale(1);
-    }
-
-    50% {
-        transform:
-            translate(-70px,-50px)
-            rotate(-25deg)
-            scale(1.15);
-    }
-}
-
-
-/* =====================================================
-   SIDEBAR
+   SIDEBAR — raised panel
 ===================================================== */
 
 .sidebar {
 
     position: fixed;
 
-    top: 18px;
-    left: 18px;
-    bottom: 18px;
+    top: 20px;
+    left: 20px;
+    bottom: 20px;
 
-    width: 255px;
+    width: 260px;
 
-    padding: 25px 16px;
+    padding: 25px 18px;
 
-    border-radius: 32px;
+    border-radius: 30px;
 
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.14),
-            rgba(255,255,255,.045)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.20);
-
-    backdrop-filter:
-        blur(25px)
-        saturate(160%);
-
-    -webkit-backdrop-filter:
-        blur(25px)
-        saturate(160%);
+    background: var(--bg);
 
     box-shadow:
 
-        0 30px 70px
-        rgba(0,0,0,.30),
-
-        inset 0 1px 0
-        rgba(255,255,255,.25);
+        /* Raised effect */
+        9px 9px 16px var(--shadow-dark),
+        -9px -9px 16px var(--shadow-light);
 
     z-index: 100;
+
 }
 
 
 /* =====================================================
-   LOGO
+   LOGO — inset text
 ===================================================== */
 
 .logo {
 
-    padding:
-        5px
-        10px
-        30px;
+    padding: 5px 10px 30px;
+
+    text-align: center;
 
 }
 
 
 .logo h2 {
 
-    font-size: 21px;
+    font-size: 22px;
 
     font-weight: 700;
 
     letter-spacing: .5px;
+
+    color: var(--text-dark);
+
+    /* Inset text effect */
+    text-shadow:
+
+        1px 1px 2px var(--shadow-light),
+        -1px -1px 2px var(--shadow-dark);
 
 }
 
 
 .logo span {
 
-    color: var(--cyan);
+    color: var(--accent);
 
 }
 
 
 /* =====================================================
-   NAVIGATION
+   NAVIGATION — soft buttons
 ===================================================== */
 
 .nav {
@@ -419,7 +290,7 @@ body::after {
 
     flex-direction: column;
 
-    gap: 8px;
+    gap: 10px;
 
 }
 
@@ -434,63 +305,64 @@ body::after {
 
     gap: 13px;
 
-    padding:
-        13px
-        15px;
+    padding: 13px 15px;
 
-    color:
-        rgba(255,255,255,.67);
+    color: var(--text-mid);
 
     text-decoration: none;
 
-    border-radius: 17px;
+    font-size: 14px;
 
-    border:
-        1px solid
-        transparent;
+    font-weight: 500;
 
-    transition:
-        all .3s ease;
+    border-radius: 18px;
+
+    background: var(--bg);
+
+    box-shadow:
+
+        /* Raised button */
+        5px 5px 10px var(--shadow-dark),
+        -5px -5px 10px var(--shadow-light);
+
+    transition: all .25s ease;
 
 }
 
 
 .nav a:hover {
 
-    color: #fff;
+    color: var(--accent);
 
-    background:
-        rgba(255,255,255,.08);
+    box-shadow:
 
-    transform:
-        translateX(4px);
+        /* Slightly raised */
+        7px 7px 14px var(--shadow-dark),
+        -7px -7px 14px var(--shadow-light);
+
+}
+
+
+.nav a:active {
+
+    box-shadow:
+
+        /* Pressed in */
+        inset 5px 5px 10px var(--shadow-dark),
+        inset -5px -5px 10px var(--shadow-light);
 
 }
 
 
 .nav a.active {
 
-    color: #fff;
+    color: var(--accent);
 
-    background:
-
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.20),
-            rgba(139,92,246,.18)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.18);
-
+    /* Pressed in effect */
     box-shadow:
 
-        0 10px 30px
-        rgba(0,0,0,.18),
-
-        inset 0 1px 0
-        rgba(255,255,255,.15);
+        inset 5px 5px 10px var(--shadow-dark),
+        inset -5px -5px 10px var(--shadow-light);
 
 }
 
@@ -501,21 +373,19 @@ body::after {
 
     position: absolute;
 
-    left: -1px;
+    left: -2px;
 
-    top: 20%;
+    top: 25%;
 
-    width: 3px;
+    width: 4px;
 
-    height: 60%;
+    height: 50%;
 
     border-radius: 10px;
 
-    background:
-        linear-gradient(
-            #22d3ee,
-            #8b5cf6
-        );
+    background: var(--accent);
+
+    box-shadow: 0 0 10px var(--accent);
 
 }
 
@@ -526,12 +396,9 @@ body::after {
 
 .main {
 
-    margin-left: 291px;
+    margin-left: 300px;
 
-    padding:
-        28px
-        32px
-        50px;
+    padding: 28px 32px 50px;
 
     max-width: 1600px;
 
@@ -546,249 +413,153 @@ body::after {
 
     display: flex;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
-    align-items:
-        center;
+    align-items: center;
 
-    margin-bottom:
-        28px;
+    margin-bottom: 28px;
 
 }
 
 
 .topbar h1 {
 
-    font-size:
-        27px;
+    font-size: 28px;
 
-    font-weight:
-        700;
+    font-weight: 700;
+
+    color: var(--text-dark);
+
+    /* Inset text */
+    text-shadow:
+
+        2px 2px 4px var(--shadow-light),
+        -2px -2px 4px var(--shadow-dark);
 
 }
 
 
 .topbar p {
 
-    margin-top:
-        5px;
+    margin-top: 5px;
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        14px;
+    font-size: 14px;
 
 }
 
 
 .user-box {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        12px;
+    gap: 12px;
 
-    padding:
-        8px
-        15px
-        8px
-        8px;
+    padding: 10px 18px 10px 10px;
 
-    border-radius:
-        20px;
+    border-radius: 25px;
 
-    background:
-        rgba(255,255,255,.08);
-
-    border:
-        1px solid
-        rgba(255,255,255,.16);
-
-    backdrop-filter:
-        blur(20px);
+    background: var(--bg);
 
     box-shadow:
-        inset 0 1px 0
-        rgba(255,255,255,.12);
+
+        /* Raised */
+        6px 6px 12px var(--shadow-dark),
+        -6px -6px 12px var(--shadow-light);
 
 }
 
 
 .avatar {
 
-    width:
-        43px;
+    width: 45px;
 
-    height:
-        43px;
+    height: 45px;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    border-radius:
-        16px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            #06b6d4,
-            #6366f1
-        );
+    color: var(--accent);
 
-    font-size:
-        14px;
+    font-size: 15px;
 
-    font-weight:
-        700;
+    font-weight: 700;
 
+    /* Inset circle */
     box-shadow:
-        0 10px 25px
-        rgba(34,211,238,.25);
+
+        inset 4px 4px 8px var(--shadow-dark),
+        inset -4px -4px 8px var(--shadow-light);
 
 }
 
 
 .user-box strong {
 
-    font-size:
-        14px;
+    font-size: 14px;
+
+    color: var(--text-dark);
 
 }
 
 
 .user-box small {
 
-    display:
-        block;
+    display: block;
 
-    margin-top:
-        2px;
+    margin-top: 2px;
 
-    color:
-        var(--muted);
+    color: var(--text-light);
+
+    font-size: 12px;
 
 }
 
 
 /* =====================================================
-   LIQUID CARD
+   NEUMORPHIC CARD
 ===================================================== */
 
 .card {
 
-    position:
-        relative;
+    position: relative;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.12),
-            rgba(255,255,255,.045)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.17);
-
-    border-radius:
-        28px;
-
-    backdrop-filter:
-        blur(25px)
-        saturate(160%);
-
-    -webkit-backdrop-filter:
-        blur(25px)
-        saturate(160%);
+    border-radius: 25px;
 
     box-shadow:
 
-        0 25px 55px
-        rgba(0,0,0,.18),
+        /* Raised card */
+        8px 8px 16px var(--shadow-dark),
+        -8px -8px 16px var(--shadow-light);
 
-        inset 0 1px 0
-        rgba(255,255,255,.20);
-
-    transition:
-        transform .35s ease,
-        box-shadow .35s ease,
-        background .35s ease;
-
-}
-
-
-.card::before {
-
-    content:
-        "";
-
-    position:
-        absolute;
-
-    width:
-        180px;
-
-    height:
-        180px;
-
-    right:
-        -100px;
-
-    top:
-        -100px;
-
-    border-radius:
-        50%;
-
-    background:
-        rgba(34,211,238,.10);
-
-    filter:
-        blur(10px);
-
-    pointer-events:
-        none;
+    transition: all .3s ease;
 
 }
 
 
 .card:hover {
 
-    transform:
-        translateY(-4px);
-
-    background:
-
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.15),
-            rgba(255,255,255,.055)
-        );
+    transform: translateY(-3px);
 
     box-shadow:
 
-        0 30px 65px
-        rgba(0,0,0,.24),
-
-        inset 0 1px 0
-        rgba(255,255,255,.22);
+        /* More raised */
+        12px 12px 24px var(--shadow-dark),
+        -12px -12px 24px var(--shadow-light);
 
 }
 
@@ -799,120 +570,89 @@ body::after {
 
 .welcome {
 
-    min-height:
-        190px;
+    min-height: 190px;
 
-    padding:
-        32px;
+    padding: 32px;
 
-    display:
-        flex;
+    display: flex;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
-    align-items:
-        center;
+    align-items: center;
 
-    margin-bottom:
-        25px;
+    margin-bottom: 25px;
 
 }
 
 
 .welcome-content {
 
-    position:
-        relative;
+    position: relative;
 
-    z-index:
-        2;
+    z-index: 2;
 
 }
 
 
 .welcome h2 {
 
-    font-size:
-        31px;
+    font-size: 30px;
 
-    margin-bottom:
-        9px;
+    margin-bottom: 9px;
+
+    color: var(--text-dark);
+
+    /* Inset text */
+    text-shadow:
+
+        2px 2px 4px var(--shadow-light),
+        -2px -2px 4px var(--shadow-dark);
 
 }
 
 
 .welcome p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        15px;
+    font-size: 15px;
 
 }
 
 
+/* Soft circle */
 .welcome-bubble {
 
-    width:
-        105px;
+    width: 110px;
 
-    height:
-        105px;
+    height: 110px;
 
-    border-radius:
-        43% 57% 55% 45%
-        / 55% 42% 58% 45%;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.35),
-            rgba(139,92,246,.30)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.20);
-
+    /* Inset circle */
     box-shadow:
 
-        inset 10px 10px 25px
-        rgba(255,255,255,.10),
+        inset 8px 8px 16px var(--shadow-dark),
+        inset -8px -8px 16px var(--shadow-light);
 
-        0 20px 40px
-        rgba(0,0,0,.20);
+    display: flex;
 
-    animation:
-        bubble 7s ease-in-out infinite;
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 40px;
+
+    color: var(--accent);
 
 }
 
 
-@keyframes bubble {
+.welcome-bubble::before {
 
-    0%,100% {
-
-        border-radius:
-            43% 57% 55% 45%
-            / 55% 42% 58% 45%;
-
-        transform:
-            rotate(0deg);
-    }
-
-    50% {
-
-        border-radius:
-            60% 40% 35% 65%
-            / 45% 60% 40% 55%;
-
-        transform:
-            rotate(12deg)
-            translateY(-8px);
-    }
+    content: "👨‍👩‍👧";
 
 }
 
@@ -923,112 +663,86 @@ body::after {
 
 .profile-grid {
 
-    display:
-        grid;
+    display: grid;
 
-    grid-template-columns:
-        1.3fr
-        1fr
-        1fr;
+    grid-template-columns: 1.3fr 1fr 1fr 1fr;
 
-    gap:
-        18px;
+    gap: 20px;
 
-    margin-bottom:
-        25px;
+    margin-bottom: 25px;
 
 }
 
 
 .profile-card {
 
-    padding:
-        23px;
+    padding: 23px;
 
 }
 
 
 .profile-main {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        17px;
+    gap: 17px;
 
 }
 
 
 .profile-avatar {
 
-    width:
-        70px;
+    width: 72px;
 
-    height:
-        70px;
+    height: 72px;
 
-    flex-shrink:
-        0;
+    flex-shrink: 0;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    border-radius:
-        24px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            #06b6d4,
-            #6366f1,
-            #8b5cf6
-        );
+    color: var(--accent);
 
-    font-size:
-        24px;
+    font-size: 24px;
 
-    font-weight:
-        700;
+    font-weight: 700;
 
+    /* Inset circle */
     box-shadow:
 
-        0 15px 35px
-        rgba(99,102,241,.25);
+        inset 6px 6px 12px var(--shadow-dark),
+        inset -6px -6px 12px var(--shadow-light);
 
 }
 
 
 .profile-card h3 {
 
-    font-size:
-        17px;
+    font-size: 17px;
 
-    margin-bottom:
-        5px;
+    margin-bottom: 5px;
+
+    color: var(--text-dark);
 
 }
 
 
 .profile-card p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        13px;
+    font-size: 13px;
 
-    line-height:
-        1.7;
+    line-height: 1.7;
 
 }
 
@@ -1039,36 +753,37 @@ body::after {
 
 .section-title {
 
-    margin:
-        30px 0 15px;
+    margin: 30px 0 15px;
 
-    display:
-        flex;
+    display: flex;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
-    align-items:
-        center;
+    align-items: center;
 
 }
 
 
 .section-title h2 {
 
-    font-size:
-        20px;
+    font-size: 20px;
+
+    color: var(--text-dark);
+
+    /* Inset text */
+    text-shadow:
+
+        2px 2px 4px var(--shadow-light),
+        -2px -2px 4px var(--shadow-dark);
 
 }
 
 
 .section-title span {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        13px;
+    font-size: 13px;
 
 }
 
@@ -1079,94 +794,81 @@ body::after {
 
 .stats {
 
-    display:
-        grid;
+    display: grid;
 
-    grid-template-columns:
-        repeat(4,1fr);
+    grid-template-columns: repeat(4, 1fr);
 
-    gap:
-        18px;
+    gap: 20px;
 
 }
 
 
 .stat {
 
-    padding:
-        21px;
+    padding: 21px;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        15px;
+    gap: 15px;
 
 }
 
 
 .stat-icon {
 
-    width:
-        52px;
+    width: 54px;
 
-    height:
-        52px;
+    height: 54px;
 
-    flex-shrink:
-        0;
+    flex-shrink: 0;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    border-radius:
-        19px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.18),
-            rgba(139,92,246,.13)
-        );
+    font-size: 22px;
 
-    border:
-        1px solid
-        rgba(255,255,255,.13);
+    color: var(--accent);
 
-    font-size:
-        21px;
+    /* Inset circle */
+    box-shadow:
+
+        inset 4px 4px 8px var(--shadow-dark),
+        inset -4px -4px 8px var(--shadow-light);
 
 }
 
 
 .stat h3 {
 
-    font-size:
-        25px;
+    font-size: 26px;
 
-    margin-bottom:
-        3px;
+    margin-bottom: 3px;
+
+    color: var(--text-dark);
+
+    /* Inset text */
+    text-shadow:
+
+        1px 1px 2px var(--shadow-light),
+        -1px -1px 2px var(--shadow-dark);
 
 }
 
 
 .stat p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        12px;
+    font-size: 12px;
 
 }
 
@@ -1177,140 +879,122 @@ body::after {
 
 .children-grid {
 
-    display:
-        grid;
+    display: grid;
 
-    grid-template-columns:
-        repeat(3,1fr);
+    grid-template-columns: repeat(3, 1fr);
 
-    gap:
-        18px;
+    gap: 20px;
 
 }
 
 
 .child-card {
 
-    padding:
-        23px;
+    padding: 23px;
 
 }
 
 
 .child-header {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        14px;
+    gap: 14px;
 
-    margin-bottom:
-        20px;
+    margin-bottom: 20px;
 
 }
 
 
 .child-avatar {
 
-    width:
-        56px;
+    width: 58px;
 
-    height:
-        56px;
+    height: 58px;
 
-    flex-shrink:
-        0;
+    flex-shrink: 0;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    border-radius:
-        20px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            #06b6d4,
-            #6366f1
-        );
+    color: var(--accent);
 
-    font-weight:
-        700;
+    font-size: 16px;
 
+    font-weight: 700;
+
+    /* Inset circle */
     box-shadow:
 
-        0 12px 28px
-        rgba(6,182,212,.20);
+        inset 4px 4px 8px var(--shadow-dark),
+        inset -4px -4px 8px var(--shadow-light);
 
 }
 
 
 .child-info h3 {
 
-    font-size:
-        16px;
+    font-size: 16px;
 
-    margin-bottom:
-        4px;
+    margin-bottom: 4px;
+
+    color: var(--text-dark);
 
 }
 
 
 .child-info p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        12px;
+    font-size: 12px;
 
 }
 
 
 .child-details {
 
-    padding-top:
-        15px;
+    padding-top: 15px;
 
-    border-top:
-        1px solid
-        rgba(255,255,255,.10);
+    border-top: 1px solid rgba(163, 177, 198, 0.3);
 
 }
 
 
 .detail {
 
-    display:
-        flex;
+    display: flex;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
-    padding:
-        6px 0;
+    padding: 8px 0;
 
-    font-size:
-        13px;
+    font-size: 13px;
 
 }
 
 
 .detail span:first-child {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
+
+}
+
+
+.detail span:last-child {
+
+    color: var(--text-dark);
+
+    font-weight: 600;
 
 }
 
@@ -1321,97 +1005,77 @@ body::after {
 
 .services-grid {
 
-    display:
-        grid;
+    display: grid;
 
-    grid-template-columns:
-        repeat(3,1fr);
+    grid-template-columns: repeat(3, 1fr);
 
-    gap:
-        18px;
+    gap: 20px;
 
 }
 
 
 .service {
 
-    display:
-        block;
+    display: block;
 
-    padding:
-        23px;
+    padding: 23px;
 
-    color:
-        #fff;
+    color: var(--text-dark);
 
-    text-decoration:
-        none;
+    text-decoration: none;
 
 }
 
 
 .service-icon {
 
-    width:
-        52px;
+    width: 54px;
 
-    height:
-        52px;
+    height: 54px;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    margin-bottom:
-        16px;
+    margin-bottom: 16px;
 
-    border-radius:
-        19px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.16),
-            rgba(139,92,246,.16)
-        );
+    font-size: 22px;
 
-    border:
-        1px solid
-        rgba(255,255,255,.13);
+    color: var(--accent);
 
-    font-size:
-        21px;
+    /* Inset circle */
+    box-shadow:
+
+        inset 4px 4px 8px var(--shadow-dark),
+        inset -4px -4px 8px var(--shadow-light);
 
 }
 
 
 .service h3 {
 
-    font-size:
-        15px;
+    font-size: 16px;
 
-    margin-bottom:
-        7px;
+    margin-bottom: 7px;
+
+    color: var(--text-dark);
 
 }
 
 
 .service p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        13px;
+    font-size: 13px;
 
-    line-height:
-        1.6;
+    line-height: 1.6;
 
 }
 
@@ -1422,127 +1086,124 @@ body::after {
 
 .empty {
 
-    padding:
-        55px 25px;
+    padding: 55px 25px;
 
-    text-align:
-        center;
+    text-align: center;
 
 }
 
 
 .empty-icon {
 
-    width:
-        70px;
+    width: 72px;
 
-    height:
-        70px;
+    height: 72px;
 
-    margin:
-        0 auto 17px;
+    margin: 0 auto 17px;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    border-radius:
-        25px;
+    border-radius: 50%;
 
-    background:
+    background: var(--bg);
 
-        linear-gradient(
-            135deg,
-            rgba(34,211,238,.12),
-            rgba(139,92,246,.12)
-        );
+    font-size: 28px;
 
-    border:
-        1px solid
-        rgba(255,255,255,.12);
+    color: var(--accent);
 
-    font-size:
-        28px;
+    /* Inset circle */
+    box-shadow:
+
+        inset 6px 6px 12px var(--shadow-dark),
+        inset -6px -6px 12px var(--shadow-light);
 
 }
 
 
 .empty h3 {
 
-    margin-bottom:
-        8px;
+    margin-bottom: 8px;
+
+    color: var(--text-dark);
 
 }
 
 
 .empty p {
 
-    color:
-        var(--muted);
+    color: var(--text-light);
 
-    font-size:
-        13px;
+    font-size: 13px;
 
 }
 
 
 /* =====================================================
-   LOGOUT
+   LOGOUT — pressed button
 ===================================================== */
 
 .logout {
 
-    margin-top:
-        25px;
+    margin-top: 25px;
 
 }
 
 
 .logout a {
 
-    display:
-        block;
+    display: block;
 
-    padding:
-        12px;
+    padding: 12px;
 
-    text-align:
-        center;
+    text-align: center;
 
-    text-decoration:
-        none;
+    text-decoration: none;
 
-    color:
-        #fda4af;
+    color: var(--danger);
 
-    border-radius:
-        16px;
+    font-size: 14px;
 
-    background:
-        rgba(244,63,94,.08);
+    font-weight: 600;
 
-    border:
-        1px solid
-        rgba(244,63,94,.14);
+    border-radius: 18px;
 
-    transition:
-        .3s;
+    background: var(--bg);
+
+    /* Pressed in effect */
+    box-shadow:
+
+        inset 5px 5px 10px var(--shadow-dark),
+        inset -5px -5px 10px var(--shadow-light);
+
+    transition: all .25s ease;
 
 }
 
 
 .logout a:hover {
 
-    color:
-        #fff;
+    color: var(--text-dark);
 
-    background:
-        rgba(244,63,94,.18);
+    box-shadow:
+
+        /* Raised on hover */
+        5px 5px 10px var(--shadow-dark),
+        -5px -5px 10px var(--shadow-light);
+
+}
+
+
+.logout a:active {
+
+    box-shadow:
+
+        /* More pressed */
+        inset 7px 7px 14px var(--shadow-dark),
+        inset -7px -7px 14px var(--shadow-light);
 
 }
 
@@ -1555,31 +1216,27 @@ body::after {
 
     .profile-grid {
 
-        grid-template-columns:
-            1fr 1fr;
+        grid-template-columns: 1fr 1fr;
 
     }
 
     .profile-grid
     .profile-card:first-child {
 
-        grid-column:
-            span 2;
+        grid-column: span 2;
 
     }
 
     .stats {
 
-        grid-template-columns:
-            repeat(2,1fr);
+        grid-template-columns: repeat(2, 1fr);
 
     }
 
     .children-grid,
     .services-grid {
 
-        grid-template-columns:
-            repeat(2,1fr);
+        grid-template-columns: repeat(2, 1fr);
 
     }
 
@@ -1590,65 +1247,50 @@ body::after {
 
     .sidebar {
 
-        position:
-            relative;
+        position: relative;
 
-        top:
-            0;
+        top: 0;
 
-        left:
-            0;
+        left: 0;
 
-        bottom:
-            auto;
+        bottom: auto;
 
-        width:
-            calc(100% - 30px);
+        width: calc(100% - 30px);
 
-        height:
-            auto;
+        height: auto;
 
-        margin:
-            15px;
+        margin: 15px;
 
     }
 
 
     .main {
 
-        margin-left:
-            0;
+        margin-left: 0;
 
-        padding:
-            20px 15px 40px;
+        padding: 20px 15px 40px;
 
     }
 
 
     .topbar {
 
-        flex-direction:
-            column;
+        flex-direction: column;
 
-        align-items:
-            flex-start;
+        align-items: flex-start;
 
-        gap:
-            15px;
+        gap: 15px;
 
     }
 
 
     .welcome {
 
-        flex-direction:
-            column;
+        flex-direction: column;
 
-        align-items:
-            flex-start;
+        align-items: flex-start;
 
-        gap:
-            25px;
+        gap: 25px;
 
     }
 
@@ -1658,8 +1300,7 @@ body::after {
     .children-grid,
     .services-grid {
 
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
 
     }
 
@@ -1667,8 +1308,7 @@ body::after {
     .profile-grid
     .profile-card:first-child {
 
-        grid-column:
-            auto;
+        grid-column: auto;
 
     }
 
@@ -1679,32 +1319,28 @@ body::after {
 
     .main {
 
-        padding:
-            15px 10px 35px;
+        padding: 15px 10px 35px;
 
     }
 
 
     .welcome {
 
-        padding:
-            24px;
+        padding: 24px;
 
     }
 
 
     .welcome h2 {
 
-        font-size:
-            25px;
+        font-size: 24px;
 
     }
 
 
     .user-box {
 
-        width:
-            100%;
+        width: 100%;
 
     }
 
@@ -1892,6 +1528,22 @@ body::after {
             <p>
                 <?= !empty($parent["phone"])
                     ? htmlspecialchars($parent["phone"])
+                    : "Not provided"
+                ?>
+            </p>
+
+        </div>
+
+
+        <div class="card profile-card">
+
+            <h3>
+                🎫 Login ID
+            </h3>
+
+            <p>
+                <?= !empty($parent["parent_number"])
+                    ? htmlspecialchars($parent["parent_number"])
                     : "Not provided"
                 ?>
             </p>
@@ -2096,6 +1748,39 @@ body::after {
                         <div class="detail">
 
                             <span>
+                                Class
+                            </span>
+
+                            <span>
+                                <?= !empty($child["class_name"])
+                                    ? htmlspecialchars($child["class_name"])
+                                        . " (" . htmlspecialchars($child["class_code"]) . ")"
+                                    : "Not assigned"
+                                ?>
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                Relationship
+                            </span>
+
+                            <span>
+                                <?= !empty($child["relationship"])
+                                    ? htmlspecialchars($child["relationship"])
+                                    : "Not specified"
+                                ?>
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
                                 Gender
                             </span>
 
@@ -2292,4 +1977,3 @@ body::after {
 </body>
 
 </html>
-

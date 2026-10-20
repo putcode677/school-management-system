@@ -28,6 +28,10 @@ $total_students = (int) $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT COUNT(*) FROM teachers");
 $total_teachers = (int) $stmt->fetchColumn();
 
+// Count parents
+$stmt = $pdo->query("SELECT COUNT(*) FROM parents");
+$total_parents = (int) $stmt->fetchColumn();
+
 // Count subjects
 $stmt = $pdo->query("SELECT COUNT(*) FROM subjects");
 $total_subjects = (int) $stmt->fetchColumn();
@@ -265,7 +269,7 @@ $total_classes = (int) $stmt->fetchColumn();
         .stats {
             display: grid;
 
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 
             gap: 22px;
 
@@ -560,6 +564,22 @@ $total_classes = (int) $stmt->fetchColumn();
             </li>
 
 
+            <!-- ALLOCATIONS -->
+            <li>
+                <a href="../admin/teacher_classes/index.php">
+                    <div class="menu-icon">👥</div>
+                    <span>Class Allocations</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="../admin/teacher_subjects/index.php">
+                    <div class="menu-icon">📖</div>
+                    <span>Subject Allocations</span>
+                </a>
+            </li>
+
+
             <li>
                 <a href="#">
                     <div class="menu-icon">📋</div>
@@ -714,6 +734,25 @@ $total_classes = (int) $stmt->fetchColumn();
 
                 <p>
                     Total Teachers
+                </p>
+
+            </div>
+
+
+            <!-- PARENTS -->
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    👨‍👩‍👧
+                </div>
+
+                <h3>
+                    <?php echo $total_parents; ?>
+                </h3>
+
+                <p>
+                    Total Parents
                 </p>
 
             </div>
@@ -883,6 +922,50 @@ $total_classes = (int) $stmt->fetchColumn();
 
                 <p>
                     Manage classes and classroom information.
+                </p>
+
+            </a>
+
+
+            <!-- CLASS ALLOCATIONS -->
+
+            <a
+                href="../admin/teacher_classes/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    👥
+                </div>
+
+                <h3>
+                    Class Allocations
+                </h3>
+
+                <p>
+                    Assign teachers to classrooms and view active class teachers.
+                </p>
+
+            </a>
+
+
+            <!-- SUBJECT ALLOCATIONS -->
+
+            <a
+                href="../admin/teacher_subjects/index.php"
+                class="card"
+            >
+
+                <div class="card-icon">
+                    📖
+                </div>
+
+                <h3>
+                    Subject Allocations
+                </h3>
+
+                <p>
+                    Assign teachers to specific subjects across the curriculum.
                 </p>
 
             </a>

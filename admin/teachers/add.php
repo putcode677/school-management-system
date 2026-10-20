@@ -406,9 +406,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <p>Create a new teacher account and profile.</p>
         </div>
 
-        <a href="index.php" class="back-btn">
-            ← Back to Teachers
-        </a>
+        <div style="display:flex; gap:10px;">
+            <a href="../../dashboard/admin.php" class="back-btn">
+                ← Dashboard
+            </a>
+            <a href="index.php" class="back-btn">
+                ← Back to Teachers
+            </a>
+        </div>
 
     </div>
 
