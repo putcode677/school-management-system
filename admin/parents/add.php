@@ -52,8 +52,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $name_parts = preg_split('/\s+/', trim($full_name));
                 $last_name = end($name_parts);
                 $default_password = strtolower($last_name);
+                if (empty($default_password)) {
+                    $default_password = "password123";
+                }
 
                 $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
+
+                // Auto-generate next parent_number (e.g. PAR001, PAR002, etc.)
+                $allNumbers = $pdo->query("SELECT parent_number FROM parents WHERE parent_number IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
+                $maxId = 0;
+                foreach ($allNumbers as $num) {
+                    if (preg_match('/PAR(\d+)/i', $num, $m)) {
+                        $val = (int) $m[1];
+                        if ($val > $maxId) {
+                            $maxId = $val;
+                        }
+                    }
+                }
+                $parent_number = 'PAR' . str_pad($maxId + 1, 3, '0', STR_PAD_LEFT);
 
                 $pdo->beginTransaction();
 
@@ -66,21 +82,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 $user_id = $pdo->lastInsertId();
 
-                // Insert parent profile
+                // Insert parent profile with parent_number
                 $stmt = $pdo->prepare(
-                    "INSERT INTO parents (user_id, phone, address, occupation)
-                     VALUES (?, ?, ?, ?)"
+                    "INSERT INTO parents (user_id, phone, address, occupation, parent_number)
+                     VALUES (?, ?, ?, ?, ?)"
                 );
                 $stmt->execute([
                     $user_id,
                     $phone ?: null,
                     $address ?: null,
-                    $occupation ?: null
+                    $occupation ?: null,
+                    $parent_number
                 ]);
 
                 $pdo->commit();
 
-                $success = "Parent added successfully. Default password: " . $default_password;
+                $success = "Parent added successfully! Login ID: <strong>" . htmlspecialchars($parent_number) . "</strong> | Default password: <strong>" . htmlspecialchars($default_password) . "</strong>";
 
                 $full_name = "";
                 $email = "";
@@ -118,7 +135,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <h1>Add New Parent</h1>
             <p>Create a new parent/guardian account.</p>
         </div>
-        <a href="index.php" class="btn btn-secondary">← Back</a>
+        <div style="display:flex; gap:10px;">
+            <a href="../../dashboard/admin.php" class="btn btn-secondary">← Dashboard</a>
+            <a href="index.php" class="btn btn-secondary">← Back</a>
+        </div>
     </div>
 
     <?php foreach ($errors as $error): ?>
@@ -126,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <?php endforeach; ?>
 
     <?php if ($success): ?>
-        <div class="success">✅ <?= htmlspecialchars($success) ?></div>
+        <div class="success">✅ <?= $success ?></div>
     <?php endif; ?>
 
     <div class="card">
