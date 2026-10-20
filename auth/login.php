@@ -20,25 +20,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
 
         /*
-         * ADMIN
-         * Login using email
+         * 1. Check by Email for all roles (Admin, Teacher, Student, Parent)
          */
         $stmt = $pdo->prepare(
             "SELECT id, full_name, email, password, role, status
              FROM users
-             WHERE email = ?
-             AND role = 'admin'
+             WHERE LOWER(email) = LOWER(?)
              LIMIT 1"
         );
-
         $stmt->execute([$credential]);
         $user = $stmt->fetch();
 
         /*
-         * STUDENT
+         * 2. If not found by email, check role-specific ID:
+         * STUDENT (student_number)
          */
         if (!$user) {
-
             $stmt = $pdo->prepare(
                 "SELECT
                     u.id,
@@ -50,20 +47,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                  FROM students s
                  INNER JOIN users u
                     ON u.id = s.user_id
-                 WHERE s.student_number = ?
+                 WHERE UPPER(s.student_number) = UPPER(?)
                  AND u.role = 'student'
                  LIMIT 1"
             );
-
             $stmt->execute([$credential]);
             $user = $stmt->fetch();
         }
 
         /*
-         * TEACHER
+         * TEACHER (employee_number)
          */
         if (!$user) {
-
             $stmt = $pdo->prepare(
                 "SELECT
                     u.id,
@@ -75,20 +70,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                  FROM teachers t
                  INNER JOIN users u
                     ON u.id = t.user_id
-                 WHERE t.employee_number = ?
+                 WHERE UPPER(t.employee_number) = UPPER(?)
                  AND u.role = 'teacher'
                  LIMIT 1"
             );
-
             $stmt->execute([$credential]);
             $user = $stmt->fetch();
         }
 
         /*
-         * PARENT
+         * PARENT (parent_number)
          */
         if (!$user) {
-
             $stmt = $pdo->prepare(
                 "SELECT
                     u.id,
@@ -100,11 +93,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                  FROM parents p
                  INNER JOIN users u
                     ON u.id = p.user_id
-                 WHERE p.parent_number = ?
+                 WHERE UPPER(p.parent_number) = UPPER(?)
                  AND u.role = 'parent'
                  LIMIT 1"
             );
-
             $stmt->execute([$credential]);
             $user = $stmt->fetch();
         }
@@ -698,7 +690,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="form-group">
 
             <label for="credential">
-                login ID
+                Login ID or Email
             </label>
 
             <div class="input-wrapper">
@@ -711,7 +703,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     type="text"
                     id="credential"
                     name="credential"
-                    placeholder="STD001, EMP001, PAR001 or admin email"
+                    placeholder="Enter email, or STD001, EMP001, PAR001"
                     value="<?php echo htmlspecialchars($_POST["credential"] ?? ""); ?>"
                     autocomplete="username"
                     required
@@ -772,13 +764,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="login-help">
 
-            <strong>Student:</strong> Student Number
-            &nbsp; | &nbsp;
-
-            <strong>Teacher:</strong> Employee Number
-            &nbsp; | &nbsp;
-
-            <strong>Parent:</strong> Parent Number
+            <strong>Login options:</strong> Email address OR Student / Employee / Parent ID
 
         </div>
 
