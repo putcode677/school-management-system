@@ -362,6 +362,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="buttons">
 
                 <a
+                    href="index.php"
+                    class="btn"
+                >
+                    📋 View Assignments
+                </a>
+
+                <a
                     href="../../dashboard/admin.php"
                     class="btn"
                 >

@@ -9,18 +9,21 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Get subjects
+// Get subjects with teacher count
 try {
 
     $stmt = $pdo->prepare(
         "SELECT
-            id,
-            subject_name,
-            subject_code,
-            description,
-            created_at
+            subjects.id,
+            subjects.subject_name,
+            subjects.subject_code,
+            subjects.description,
+            subjects.created_at,
+            COUNT(DISTINCT teacher_subjects.teacher_id) AS teacher_count
          FROM subjects
-         ORDER BY id DESC"
+         LEFT JOIN teacher_subjects ON teacher_subjects.subject_id = subjects.id
+         GROUP BY subjects.id, subjects.subject_name, subjects.subject_code, subjects.description, subjects.created_at
+         ORDER BY subjects.subject_name ASC"
     );
 
     $stmt->execute();
@@ -314,6 +317,13 @@ try {
                 </a>
 
                 <a
+                    href="../teacher_subjects/index.php"
+                    class="btn"
+                >
+                    👨‍🏫 Teacher Assignments
+                </a>
+
+                <a
                     href="add.php"
                     class="btn btn-primary"
                 >
@@ -351,6 +361,7 @@ try {
                             <th>#</th>
                             <th>Subject Name</th>
                             <th>Subject Code</th>
+                            <th>Teachers</th>
                             <th>Description</th>
                             <th>Created At</th>
                             <th>Actions</th>
@@ -381,6 +392,14 @@ try {
 
                                 <span class="subject-code">
                                     <?= htmlspecialchars($subject['subject_code']) ?>
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <span class="subject-code" style="color: <?= $subject['teacher_count'] > 0 ? '#10b981' : '#f59e0b' ?>;">
+                                    <?= (int)$subject['teacher_count'] ?> <?= $subject['teacher_count'] == 1 ? 'Teacher' : 'Teachers' ?>
                                 </span>
 
                             </td>

@@ -21,9 +21,16 @@ $stmt = $pdo->query("
         teachers.specialization,
         teachers.hire_date,
         users.full_name,
-        users.email
+        users.email,
+        STRING_AGG(DISTINCT classes.class_code, ', ') AS assigned_classes,
+        STRING_AGG(DISTINCT subjects.subject_code, ', ') AS assigned_subjects
     FROM teachers
     INNER JOIN users ON teachers.user_id = users.id
+    LEFT JOIN teacher_classes ON teacher_classes.teacher_id = teachers.id
+    LEFT JOIN classes ON classes.id = teacher_classes.class_id
+    LEFT JOIN teacher_subjects ON teacher_subjects.teacher_id = teachers.id
+    LEFT JOIN subjects ON subjects.id = teacher_subjects.subject_id
+    GROUP BY teachers.id, teachers.employee_number, teachers.phone, teachers.specialization, teachers.hire_date, users.full_name, users.email
     ORDER BY teachers.id DESC
 ");
 
@@ -62,6 +69,8 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .header h1 {
@@ -76,6 +85,7 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .buttons {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -179,6 +189,17 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
             font-weight: 600;
         }
 
+        .badge-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 8px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
         .actions {
             display: flex;
             gap: 8px;
@@ -249,13 +270,21 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <div>
             <h1>Teachers Management</h1>
-            <p>Manage school teachers and their information.</p>
+            <p>Manage school teachers, class assignments and subjects.</p>
         </div>
 
         <div class="buttons">
 
             <a href="../../dashboard/admin.php" class="btn">
                 🏠 Dashboard
+            </a>
+
+            <a href="../teacher_classes/index.php" class="btn">
+                🏫 Assign Classes
+            </a>
+
+            <a href="../teacher_subjects/index.php" class="btn">
+                📖 Assign Subjects
             </a>
 
             <a href="add.php" class="btn">
@@ -294,8 +323,9 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <th>Employee Number</th>
                         <th>Email</th>
                         <th>Phone</th>
+                        <th>Classes</th>
+                        <th>Subjects</th>
                         <th>Specialization</th>
-                        <th>Hire Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -331,11 +361,23 @@ $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </td>
 
                             <td>
-                                <?php echo htmlspecialchars($teacher["specialization"] ?? "-"); ?>
+                                <?php if (!empty($teacher["assigned_classes"])): ?>
+                                    <span class="badge-tag"><?= htmlspecialchars($teacher["assigned_classes"]) ?></span>
+                                <?php else: ?>
+                                    <span style="color:#999; font-size:12px;">None</span>
+                                <?php endif; ?>
                             </td>
 
                             <td>
-                                <?php echo htmlspecialchars($teacher["hire_date"] ?? "-"); ?>
+                                <?php if (!empty($teacher["assigned_subjects"])): ?>
+                                    <span class="badge-tag"><?= htmlspecialchars($teacher["assigned_subjects"]) ?></span>
+                                <?php else: ?>
+                                    <span style="color:#999; font-size:12px;">None</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td>
+                                <?php echo htmlspecialchars($teacher["specialization"] ?? "-"); ?>
                             </td>
 
                             <td>
