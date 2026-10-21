@@ -1395,7 +1395,7 @@ try {
 
                     <p>
 
-                        Attendance content will appear here.
+                        Attendance tracking is not available yet.
 
                     </p>
 
@@ -1418,7 +1418,7 @@ try {
 
                     <p>
 
-                        Assignments content will appear here.
+                        Assignment management is not available yet.
 
                     </p>
 
@@ -1441,7 +1441,7 @@ try {
 
                     <p>
 
-                        Results content will appear here.
+                        Results management is not available yet.
 
                     </p>
 
@@ -1464,7 +1464,7 @@ try {
 
                     <p>
 
-                        Timetable content will appear here.
+                        Timetable viewing is not available yet.
 
                     </p>
 
