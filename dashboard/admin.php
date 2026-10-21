@@ -148,6 +148,16 @@ $total_classes = (int) $stmt->fetchColumn();
             transition: 0.3s;
         }
 
+        .menu .menu-unavailable {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 16px;
+            color: #777;
+            border-radius: 15px;
+            opacity: .65;
+        }
+
         .menu a:hover,
         .menu a.active {
             color: #222;
@@ -358,6 +368,23 @@ $total_classes = (int) $stmt->fetchColumn();
 
         .card:hover {
             transform: translateY(-5px);
+        }
+
+        .card.unavailable {
+            cursor: default;
+            opacity: .78;
+        }
+
+        .card.unavailable:hover {
+            transform: none;
+        }
+
+        .card.unavailable small {
+            display: inline-block;
+            margin-top: 12px;
+            color: #777;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .card:active {
@@ -581,26 +608,26 @@ $total_classes = (int) $stmt->fetchColumn();
 
 
             <li>
-                <a href="#">
+                <span class="menu-unavailable" aria-disabled="true">
                     <div class="menu-icon">📋</div>
-                    <span>Attendance</span>
-                </a>
+                    <span>Attendance (not available)</span>
+                </span>
             </li>
 
 
             <li>
-                <a href="#">
+                <span class="menu-unavailable" aria-disabled="true">
                     <div class="menu-icon">📊</div>
-                    <span>Results</span>
-                </a>
+                    <span>Results (not available)</span>
+                </span>
             </li>
 
 
             <li>
-                <a href="#">
+                <span class="menu-unavailable" aria-disabled="true">
                     <div class="menu-icon">⚙️</div>
-                    <span>Settings</span>
-                </a>
+                    <span>Settings (not available)</span>
+                </span>
             </li>
 
         </ul>
@@ -973,10 +1000,7 @@ $total_classes = (int) $stmt->fetchColumn();
 
             <!-- ATTENDANCE -->
 
-            <a
-                href="#"
-                class="card"
-            >
+            <div class="card unavailable" aria-disabled="true">
 
                 <div class="card-icon">
                     📋
@@ -990,15 +1014,13 @@ $total_classes = (int) $stmt->fetchColumn();
                     Monitor and manage student attendance.
                 </p>
 
-            </a>
+                <small>Not available yet</small>
+            </div>
 
 
             <!-- RESULTS -->
 
-            <a
-                href="#"
-                class="card"
-            >
+            <div class="card unavailable" aria-disabled="true">
 
                 <div class="card-icon">
                     📊
@@ -1012,15 +1034,13 @@ $total_classes = (int) $stmt->fetchColumn();
                     Manage student academic results and performance.
                 </p>
 
-            </a>
+                <small>Not available yet</small>
+            </div>
 
 
             <!-- SETTINGS -->
 
-            <a
-                href="#"
-                class="card"
-            >
+            <div class="card unavailable" aria-disabled="true">
 
                 <div class="card-icon">
                     ⚙️
@@ -1034,7 +1054,8 @@ $total_classes = (int) $stmt->fetchColumn();
                     Configure system settings and administration options.
                 </p>
 
-            </a>
+                <small>Not available yet</small>
+            </div>
 
         </div>
 
