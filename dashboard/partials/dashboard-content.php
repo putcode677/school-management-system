@@ -38,7 +38,7 @@ $full_name = $_SESSION["full_name"] ?? "Administrator";
     <a class="card nav-link" data-page="parents"><div class="card-icon">👨‍👩‍👧</div><h3>Parents</h3><p>Manage parent information and student relationships.</p></a>
     <a class="card nav-link" data-page="subjects"><div class="card-icon">📚</div><h3>Subjects</h3><p>Create and manage school subjects.</p></a>
     <a class="card nav-link" data-page="classes"><div class="card-icon">🏫</div><h3>Classes</h3><p>Manage classes and classroom information.</p></a>
-    <a href="#" class="card"><div class="card-icon">📋</div><h3>Attendance</h3><p>Monitor and manage student attendance.</p></a>
-    <a href="#" class="card"><div class="card-icon">📊</div><h3>Results</h3><p>Manage student academic results and performance.</p></a>
-    <a href="#" class="card"><div class="card-icon">⚙️</div><h3>Settings</h3><p>Configure system settings and administration options.</p></a>
+    <div class="card unavailable" aria-disabled="true"><div class="card-icon">📋</div><h3>Attendance</h3><p>Monitor and manage student attendance.</p><small>Not available yet</small></div>
+    <div class="card unavailable" aria-disabled="true"><div class="card-icon">📊</div><h3>Results</h3><p>Manage student academic results and performance.</p><small>Not available yet</small></div>
+    <div class="card unavailable" aria-disabled="true"><div class="card-icon">⚙️</div><h3>Settings</h3><p>Configure system settings and administration options.</p><small>Not available yet</small></div>
 </div>
