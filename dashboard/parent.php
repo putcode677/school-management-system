@@ -329,6 +329,22 @@ body {
 
 }
 
+.nav .nav-disabled {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 15px;
+    border-radius: 18px;
+    color: var(--text-light);
+    font-size: 14px;
+    opacity: .65;
+}
+
+.nav .nav-disabled small {
+    margin-left: auto;
+    font-size: 10px;
+}
+
 
 .nav a:hover {
 
@@ -1366,45 +1382,32 @@ body {
 
     <div class="nav">
 
-        <a href="#" class="active">
+        <a href="#top" class="active">
             🏠
             <span>Dashboard</span>
         </a>
 
-        <a href="#">
+        <a href="#children">
             👨‍👩‍👧
             <span>My Children</span>
         </a>
 
-        <a href="#">
-            📊
-            <span>Results</span>
-        </a>
-
-        <a href="#">
-            📈
-            <span>Performance</span>
-        </a>
-
-        <a href="#">
-            🕒
-            <span>Attendance</span>
-        </a>
-
-        <a href="#">
-            📢
-            <span>School Updates</span>
-        </a>
-
-        <a href="#">
-            💬
-            <span>Feedback</span>
-        </a>
-
-        <a href="#">
+        <a href="#profile">
             👤
             <span>My Profile</span>
         </a>
+
+        <span class="nav-disabled" aria-disabled="true">
+            📊
+            <span>Results</span>
+            <small>Not available</small>
+        </span>
+
+        <span class="nav-disabled" aria-disabled="true">
+            🕒
+            <span>Attendance</span>
+            <small>Not available</small>
+        </span>
 
     </div>
 
@@ -1420,7 +1423,7 @@ body {
 </div>
 
 
-<div class="main">
+<div class="main" id="top">
 
 
     <!-- TOPBAR -->
@@ -1489,7 +1492,7 @@ body {
 
     <!-- PROFILE -->
 
-    <div class="profile-grid">
+    <div class="profile-grid" id="profile">
 
 
         <div class="card profile-card">
@@ -1569,113 +1572,9 @@ body {
     </div>
 
 
-    <!-- FAMILY OVERVIEW -->
-
-    <div class="section-title">
-
-        <h2>
-            Family Overview
-        </h2>
-
-        <span>
-            Your family at a glance
-        </span>
-
-    </div>
-
-
-    <div class="stats">
-
-
-        <div class="card stat">
-
-            <div class="stat-icon">
-                👨‍👩‍👧
-            </div>
-
-            <div>
-
-                <h3>
-                    <?= $children_count ?>
-                </h3>
-
-                <p>
-                    My Children
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="card stat">
-
-            <div class="stat-icon">
-                📊
-            </div>
-
-            <div>
-
-                <h3>
-                    0
-                </h3>
-
-                <p>
-                    Results
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="card stat">
-
-            <div class="stat-icon">
-                🕒
-            </div>
-
-            <div>
-
-                <h3>
-                    0%
-                </h3>
-
-                <p>
-                    Attendance
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="card stat">
-
-            <div class="stat-icon">
-                📢
-            </div>
-
-            <div>
-
-                <h3>
-                    0
-                </h3>
-
-                <p>
-                    School Updates
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
     <!-- CHILDREN -->
 
-    <div class="section-title">
+    <div class="section-title" id="children">
 
         <h2>
             My Children
@@ -1841,135 +1740,6 @@ body {
         </div>
 
     <?php endif; ?>
-
-
-    <!-- SERVICES -->
-
-    <div class="section-title">
-
-        <h2>
-            Parent Services
-        </h2>
-
-        <span>
-            Quick access
-        </span>
-
-    </div>
-
-
-    <div class="services-grid">
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                👨‍👩‍👧
-            </div>
-
-            <h3>
-                My Children
-            </h3>
-
-            <p>
-                View your children's profiles
-                and school information.
-            </p>
-
-        </a>
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                📊
-            </div>
-
-            <h3>
-                Academic Results
-            </h3>
-
-            <p>
-                View examination results
-                for your children.
-            </p>
-
-        </a>
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                📈
-            </div>
-
-            <h3>
-                Performance
-            </h3>
-
-            <p>
-                Track academic performance
-                across examinations.
-            </p>
-
-        </a>
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                🕒
-            </div>
-
-            <h3>
-                Attendance
-            </h3>
-
-            <p>
-                Monitor your children's
-                school attendance.
-            </p>
-
-        </a>
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                📢
-            </div>
-
-            <h3>
-                School Updates
-            </h3>
-
-            <p>
-                Stay informed about meetings,
-                announcements and events.
-            </p>
-
-        </a>
-
-
-        <a href="#" class="card service">
-
-            <div class="service-icon">
-                💬
-            </div>
-
-            <h3>
-                Feedback
-            </h3>
-
-            <p>
-                Send comments and communicate
-                with the school.
-            </p>
-
-        </a>
-
-
-    </div>
 
 
 </div>
