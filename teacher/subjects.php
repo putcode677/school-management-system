@@ -559,7 +559,7 @@ body {
 
             <li>
 
-                <a href="#">
+                <a href="../dashboard/teacher.php?page=students">
 
                     <div class="menu-icon">
                         👨‍🎓
@@ -576,7 +576,7 @@ body {
 
             <li>
 
-                <a href="#">
+                <a href="../dashboard/teacher.php?page=attendance">
 
                     <div class="menu-icon">
                         📝
@@ -593,7 +593,7 @@ body {
 
             <li>
 
-                <a href="#">
+                <a href="../dashboard/teacher.php?page=assignments">
 
                     <div class="menu-icon">
                         📋
@@ -610,7 +610,7 @@ body {
 
             <li>
 
-                <a href="#">
+                <a href="../dashboard/teacher.php?page=results">
 
                     <div class="menu-icon">
                         📊
@@ -627,7 +627,7 @@ body {
 
             <li>
 
-                <a href="#">
+                <a href="../dashboard/teacher.php?page=timetable">
 
                     <div class="menu-icon">
                         🗓️
