@@ -20,10 +20,38 @@ Attendance recording, grade entry and publishing, assignments, timetables, billi
 
 ## Setup
 
-1. Configure the database connection in `.env` using the keys expected by `config/database.php`.
-2. Create the database tables and seed the initial user accounts. Database schema and seed scripts are not currently included in this repository.
-3. Serve the project through a PHP-compatible web server with PDO PostgreSQL enabled.
-4. Keep `.env` private and never commit database credentials.
+Requirements: PHP 8.2 or later with PDO PostgreSQL enabled, and PostgreSQL 16 or later.
+
+1. Create a PostgreSQL database and a database user with permission to create tables.
+2. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`. Keep the local `.env` file private.
+3. Apply the initial schema:
+
+   ```bash
+   php scripts/migrate.php
+   ```
+
+4. Create the first administrator from an interactive terminal. The password prompt is hidden and requires at least 12 characters:
+
+   ```bash
+   php scripts/create_admin.php
+   ```
+
+5. Run the database smoke tests:
+
+   ```bash
+   php tests/database_smoke.php
+   ```
+
+6. Serve the project through a PHP-compatible web server.
+
+The initial migration is for a **new, empty database**. The migration command refuses to initialize when it sees existing application tables without migration history. For an existing installation, back up the database and review/adopt its schema before running migrations; do not point the initial migration at production data.
+
+## Database maintenance
+
+- SQL migrations live in `database/migrations/` and are applied in filename order.
+- Applied versions are recorded in `schema_migrations`; do not edit an applied migration. Add a new numbered migration for subsequent schema changes.
+- CI starts PostgreSQL, applies migrations to a fresh database, and checks core relationships and constraints.
+- The initial administrator can only be created when there is no existing admin account.
 
 ## Product direction
 

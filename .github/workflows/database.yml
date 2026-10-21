@@ -1,0 +1,39 @@
+name: Database checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: school_management_test
+          POSTGRES_USER: school_management
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U school_management -d school_management_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: school_management_test
+      DB_USER: school_management
+      DB_PASSWORD: test-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_pgsql
+      - name: Apply database migrations
+        run: php scripts/migrate.php
+      - name: Exercise database relationships and constraints
+        run: php tests/database_smoke.php
