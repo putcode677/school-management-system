@@ -20,9 +20,9 @@ function navActive($key, $active) {
         <li><a data-page="parents" class="nav-link <?= navActive('parents', $active) ?>"><div class="menu-icon">👨‍👩‍👧</div><span>Parents</span></a></li>
         <li><a data-page="subjects" class="nav-link <?= navActive('subjects', $active) ?>"><div class="menu-icon">📚</div><span>Subjects</span></a></li>
         <li><a data-page="classes" class="nav-link <?= navActive('classes', $active) ?>"><div class="menu-icon">🏫</div><span>Classes</span></a></li>
-        <li><a href="#"><div class="menu-icon">📋</div><span>Attendance</span></a></li>
-        <li><a href="#"><div class="menu-icon">📊</div><span>Results</span></a></li>
-        <li><a href="#"><div class="menu-icon">⚙️</div><span>Settings</span></a></li>
+        <li><span class="menu-unavailable" aria-disabled="true"><div class="menu-icon">📋</div><span>Attendance (not available)</span></span></li>
+        <li><span class="menu-unavailable" aria-disabled="true"><div class="menu-icon">📊</div><span>Results (not available)</span></span></li>
+        <li><span class="menu-unavailable" aria-disabled="true"><div class="menu-icon">⚙️</div><span>Settings (not available)</span></span></li>
     </ul>
 
     <div class="logout">
