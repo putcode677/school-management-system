@@ -170,6 +170,267 @@ try {
     die("Database Error: " . $e->getMessage());
 }
 
+$attendance_statuses = [
+    "present" => "Present",
+    "absent" => "Absent",
+    "late" => "Late",
+    "excused" => "Excused",
+];
+$attendance_errors = [];
+$attendance_message = $_SESSION["attendance_flash"] ?? "";
+unset($_SESSION["attendance_flash"]);
+
+if (!isset($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
+$attendance_class_id = filter_var(
+    $_GET["class_id"] ?? 0,
+    FILTER_VALIDATE_INT
+);
+$attendance_class_id = $attendance_class_id !== false && $attendance_class_id > 0
+    ? $attendance_class_id
+    : 0;
+$attendance_date = $_GET["date"] ?? date("Y-m-d");
+$today = date("Y-m-d");
+
+function isValidAttendanceDate($value, string $today): bool
+{
+    if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        return false;
+    }
+
+    $parsedDate = DateTimeImmutable::createFromFormat("!Y-m-d", $value);
+
+    return $parsedDate !== false
+        && $parsedDate->format("Y-m-d") === $value
+        && $value <= $today;
+}
+
+if (!isValidAttendanceDate($attendance_date, $today)) {
+    $attendance_date = $today;
+    if (($_GET["page"] ?? "") === "attendance") {
+        $attendance_errors[] = "Choose a valid date that is not in the future.";
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && $page === "attendance") {
+    $posted_token = $_POST["csrf_token"] ?? "";
+    $posted_class_id = filter_var(
+        $_POST["class_id"] ?? 0,
+        FILTER_VALIDATE_INT
+    );
+    $posted_date = $_POST["attendance_date"] ?? "";
+
+    if (
+        !is_string($posted_token)
+        || !hash_equals($_SESSION["csrf_token"], $posted_token)
+    ) {
+        $attendance_errors[] = "Your session has expired. Reload the page and try again.";
+    }
+
+    if ($posted_class_id === false || $posted_class_id <= 0) {
+        $attendance_errors[] = "Select a class assigned to you.";
+    } else {
+        $attendance_class_id = $posted_class_id;
+    }
+
+    if (!isValidAttendanceDate($posted_date, $today)) {
+        $attendance_errors[] = "Choose a valid attendance date that is not in the future.";
+    } else {
+        $attendance_date = $posted_date;
+    }
+
+    $assigned_class_ids = array_map(
+        static fn($class) => (int) $class["id"],
+        $classes
+    );
+    if (!in_array($attendance_class_id, $assigned_class_ids, true)) {
+        $attendance_errors[] = "You can only record attendance for a class assigned to you.";
+    }
+
+    if ($attendance_errors === []) {
+        try {
+            $roster_stmt = $pdo->prepare(
+                "SELECT students.id
+                 FROM student_classes
+                 INNER JOIN students
+                    ON students.id = student_classes.student_id
+                 INNER JOIN users
+                    ON users.id = students.user_id
+                 WHERE student_classes.class_id = ?
+                   AND users.status = 'active'
+                 ORDER BY students.id"
+            );
+            $roster_stmt->execute([$attendance_class_id]);
+            $roster_ids = array_map(
+                "intval",
+                $roster_stmt->fetchAll(PDO::FETCH_COLUMN)
+            );
+            $roster_lookup = array_fill_keys($roster_ids, true);
+            $submitted_attendance = $_POST["attendance"] ?? null;
+
+            if ($roster_ids === []) {
+                $attendance_errors[] = "There are no active students in this class to mark.";
+            } elseif (!is_array($submitted_attendance)) {
+                $attendance_errors[] = "Attendance is missing for the selected class.";
+            } else {
+                foreach ($submitted_attendance as $student_id => $status) {
+                    $student_id = filter_var($student_id, FILTER_VALIDATE_INT);
+                    if (
+                        $student_id === false
+                        || !isset($roster_lookup[$student_id])
+                        || !is_string($status)
+                        || !isset($attendance_statuses[$status])
+                    ) {
+                        $attendance_errors[] = "The submitted attendance contains an invalid student or status.";
+                        break;
+                    }
+                }
+
+                foreach ($roster_ids as $student_id) {
+                    if (!isset($submitted_attendance[$student_id])) {
+                        $attendance_errors[] = "Choose an attendance status for every student.";
+                        break;
+                    }
+                }
+            }
+
+            if ($attendance_errors === []) {
+                $pdo->beginTransaction();
+                $session_stmt = $pdo->prepare(
+                    "INSERT INTO attendance_sessions
+                        (class_id, attendance_date, created_by, updated_by)
+                     VALUES (?, ?, ?, ?)
+                     ON CONFLICT (class_id, attendance_date)
+                     DO UPDATE SET
+                        updated_by = EXCLUDED.updated_by,
+                        updated_at = CURRENT_TIMESTAMP
+                     RETURNING id"
+                );
+                $session_stmt->execute([
+                    $attendance_class_id,
+                    $attendance_date,
+                    $teacher["id"],
+                    $teacher["id"],
+                ]);
+                $attendance_session_id = (int) $session_stmt->fetchColumn();
+
+                $existing_stmt = $pdo->prepare(
+                    "SELECT id, status
+                     FROM attendance_records
+                     WHERE session_id = ? AND student_id = ?
+                     FOR UPDATE"
+                );
+                $insert_stmt = $pdo->prepare(
+                    "INSERT INTO attendance_records
+                        (session_id, student_id, status, recorded_by)
+                     VALUES (?, ?, ?, ?)"
+                );
+                $change_stmt = $pdo->prepare(
+                    "INSERT INTO attendance_changes
+                        (attendance_record_id, previous_status, new_status, changed_by)
+                     VALUES (?, ?, ?, ?)"
+                );
+                $update_stmt = $pdo->prepare(
+                    "UPDATE attendance_records
+                     SET status = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+                     WHERE id = ?"
+                );
+
+                foreach ($roster_ids as $student_id) {
+                    $status = $submitted_attendance[$student_id];
+                    $existing_stmt->execute([
+                        $attendance_session_id,
+                        $student_id,
+                    ]);
+                    $existing_record = $existing_stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$existing_record) {
+                        $insert_stmt->execute([
+                            $attendance_session_id,
+                            $student_id,
+                            $status,
+                            $teacher["id"],
+                        ]);
+                    } elseif ($existing_record["status"] !== $status) {
+                        $change_stmt->execute([
+                            $existing_record["id"],
+                            $existing_record["status"],
+                            $status,
+                            $teacher["id"],
+                        ]);
+                        $update_stmt->execute([
+                            $status,
+                            $teacher["id"],
+                            $existing_record["id"],
+                        ]);
+                    }
+                }
+
+                $pdo->commit();
+                $_SESSION["attendance_flash"] = "Attendance saved successfully.";
+                header(
+                    "Location: teacher.php?page=attendance&class_id="
+                    . $attendance_class_id
+                    . "&date="
+                    . rawurlencode($attendance_date)
+                );
+                exit;
+            }
+        } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("Teacher attendance save failed: " . $e->getMessage());
+            $attendance_errors[] = "Attendance could not be saved. Please try again.";
+        }
+    }
+}
+
+$attendance_class = null;
+$attendance_roster = [];
+$attendance_class_lookup = [];
+foreach ($classes as $class) {
+    $attendance_class_lookup[(int) $class["id"]] = $class;
+}
+
+if ($page === "attendance" && $attendance_class_id > 0) {
+    $attendance_class = $attendance_class_lookup[$attendance_class_id] ?? null;
+    if ($attendance_class !== null) {
+        try {
+            $roster_stmt = $pdo->prepare(
+                "SELECT
+                    students.id,
+                    students.student_number,
+                    users.full_name,
+                    attendance_records.status
+                 FROM student_classes
+                 INNER JOIN students
+                    ON students.id = student_classes.student_id
+                 INNER JOIN users
+                    ON users.id = students.user_id
+                 LEFT JOIN attendance_sessions
+                    ON attendance_sessions.class_id = student_classes.class_id
+                   AND attendance_sessions.attendance_date = ?
+                 LEFT JOIN attendance_records
+                    ON attendance_records.session_id = attendance_sessions.id
+                   AND attendance_records.student_id = students.id
+                 WHERE student_classes.class_id = ?
+                   AND users.status = 'active'
+                 ORDER BY users.full_name ASC"
+            );
+            $roster_stmt->execute([$attendance_date, $attendance_class_id]);
+            $attendance_roster = $roster_stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Teacher attendance roster load failed: " . $e->getMessage());
+            $attendance_errors[] = "The class attendance list could not be loaded.";
+        }
+    } elseif (!in_array($attendance_class_id, $assigned_class_ids ?? [], true)) {
+        $attendance_errors[] = "You can only view attendance for a class assigned to you.";
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -578,6 +839,66 @@ try {
             border-top: 1px solid #c5d5e8;
 
             color: #1e3a8a;
+        }
+
+        .attendance-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .attendance-filter label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .attendance-filter select,
+        .attendance-filter input,
+        .attendance-status {
+            min-height: 42px;
+            padding: 9px 12px;
+            border: 1px solid #b8c9dc;
+            border-radius: 10px;
+            background: #fff;
+            color: #1e3a8a;
+            font: inherit;
+        }
+
+        .attendance-button {
+            min-height: 42px;
+            padding: 9px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .attendance-error,
+        .attendance-success {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+
+        .attendance-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .attendance-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .attendance-note {
+            margin-bottom: 16px;
+            color: #526783;
         }
 
         .student-number {
@@ -1383,23 +1704,129 @@ try {
 
             <?php elseif ($page === "attendance"): ?>
 
+                <h2 class="page-title">Class Attendance</h2>
 
-                <h2 class="page-title">
+                <?php if ($attendance_message !== ""): ?>
+                    <div class="attendance-success" role="status">
+                        <?= htmlspecialchars($attendance_message, ENT_QUOTES, "UTF-8") ?>
+                    </div>
+                <?php endif; ?>
 
-                    Attendance
+                <?php foreach ($attendance_errors as $attendance_error): ?>
+                    <div class="attendance-error" role="alert">
+                        <?= htmlspecialchars($attendance_error, ENT_QUOTES, "UTF-8") ?>
+                    </div>
+                <?php endforeach; ?>
 
-                </h2>
+                <form method="get" class="attendance-filter">
+                    <input type="hidden" name="page" value="attendance">
+                    <div>
+                        <label for="attendance-class">Class</label>
+                        <select id="attendance-class" name="class_id" required>
+                            <option value="">Select a class</option>
+                            <?php foreach ($classes as $class): ?>
+                                <option
+                                    value="<?= (int) $class["id"] ?>"
+                                    <?= (int) $class["id"] === $attendance_class_id ? "selected" : "" ?>
+                                >
+                                    <?= htmlspecialchars($class["class_name"], ENT_QUOTES, "UTF-8") ?>
+                                    (<?= htmlspecialchars($class["class_code"], ENT_QUOTES, "UTF-8") ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="attendance-date">Date</label>
+                        <input
+                            type="date"
+                            id="attendance-date"
+                            name="date"
+                            value="<?= htmlspecialchars($attendance_date, ENT_QUOTES, "UTF-8") ?>"
+                            max="<?= htmlspecialchars($today, ENT_QUOTES, "UTF-8") ?>"
+                            required
+                        >
+                    </div>
+                    <button class="attendance-button" type="submit">Load class</button>
+                </form>
 
+                <p class="attendance-note">
+                    Record attendance for today or a past date. Saving a correction keeps an audit history.
+                </p>
 
-                <div class="info-box">
+                <?php if ($attendance_class !== null && $attendance_roster !== []): ?>
+                    <h3>
+                        <?= htmlspecialchars($attendance_class["class_name"], ENT_QUOTES, "UTF-8") ?>
+                        — <?= htmlspecialchars(date("F j, Y", strtotime($attendance_date)), ENT_QUOTES, "UTF-8") ?>
+                    </h3>
 
-                    <p>
-
-                        Attendance tracking is not available yet.
-
-                    </p>
-
-                </div>
+                    <div class="student-table-wrapper">
+                        <form method="post">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") ?>">
+                            <input type="hidden" name="class_id" value="<?= $attendance_class_id ?>">
+                            <input type="hidden" name="attendance_date" value="<?= htmlspecialchars($attendance_date, ENT_QUOTES, "UTF-8") ?>">
+                            <table class="student-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student number</th>
+                                        <th>Student</th>
+                                        <th>Attendance status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($attendance_roster as $student): ?>
+                                        <?php
+                                                        $submitted_values = $_POST["attendance"] ?? [];
+                                                        $submitted_status = is_array($submitted_values)
+                                                            ? ($submitted_values[$student["id"]] ?? "")
+                                                            : "";
+                                                        $current_status = is_string($submitted_status)
+                                                            && isset($attendance_statuses[$submitted_status])
+                                                            ? $submitted_status
+                                                            : ($student["status"] ?? "");
+                                                        ?>
+                                        <tr>
+                                            <td class="student-number">
+                                                <?= htmlspecialchars($student["student_number"], ENT_QUOTES, "UTF-8") ?>
+                                            </td>
+                                            <td>
+                                                <?= htmlspecialchars($student["full_name"], ENT_QUOTES, "UTF-8") ?>
+                                            </td>
+                                            <td>
+                                                <select
+                                                    class="attendance-status"
+                                                    name="attendance[<?= (int) $student["id"] ?>]"
+                                                    aria-label="Attendance for <?= htmlspecialchars($student["full_name"], ENT_QUOTES, "UTF-8") ?>"
+                                                    required
+                                                >
+                                                    <option value="">Select status</option>
+                                                    <?php foreach ($attendance_statuses as $status_value => $status_label): ?>
+                                                        <option
+                                                            value="<?= htmlspecialchars($status_value, ENT_QUOTES, "UTF-8") ?>"
+                                                            <?= $current_status === $status_value ? "selected" : "" ?>
+                                                        >
+                                                            <?= htmlspecialchars($status_label, ENT_QUOTES, "UTF-8") ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <button class="attendance-button" type="submit">
+                                Save attendance
+                            </button>
+                        </form>
+                    </div>
+                <?php elseif ($attendance_class !== null): ?>
+                    <div class="info-box">
+                        <p>No active students are currently assigned to this class.</p>
+                    </div>
+                <?php elseif ($classes === []): ?>
+                    <div class="info-box">
+                        <p>No classes are assigned to your teacher account.</p>
+                    </div>
+                <?php endif; ?>
 
 
             <!-- ASSIGNMENTS -->

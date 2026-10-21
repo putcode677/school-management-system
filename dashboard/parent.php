@@ -88,6 +88,49 @@ $children = $children_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $children_count = count($children);
 
+$child_attendance = [];
+$attendance_error = false;
+
+try {
+    $attendance_stmt = $pdo->prepare("
+        WITH ranked_attendance AS (
+            SELECT
+                students.id AS student_id,
+                attendance_sessions.attendance_date,
+                attendance_records.status,
+                classes.class_name,
+                classes.class_code,
+                ROW_NUMBER() OVER (
+                    PARTITION BY students.id
+                    ORDER BY attendance_sessions.attendance_date DESC,
+                             attendance_records.id DESC
+                ) AS attendance_rank
+            FROM student_parents
+            INNER JOIN students
+                ON students.id = student_parents.student_id
+            INNER JOIN attendance_records
+                ON attendance_records.student_id = students.id
+            INNER JOIN attendance_sessions
+                ON attendance_sessions.id = attendance_records.session_id
+            INNER JOIN classes
+                ON classes.id = attendance_sessions.class_id
+            WHERE student_parents.parent_id = ?
+        )
+        SELECT student_id, attendance_date, status, class_name, class_code
+        FROM ranked_attendance
+        WHERE attendance_rank <= 10
+        ORDER BY student_id, attendance_date DESC
+    ");
+    $attendance_stmt->execute([$parent["id"]]);
+
+    foreach ($attendance_stmt->fetchAll(PDO::FETCH_ASSOC) as $record) {
+        $child_attendance[(int) $record["student_id"]][] = $record;
+    }
+} catch (PDOException $e) {
+    error_log("Parent attendance query failed: " . $e->getMessage());
+    $attendance_error = true;
+}
+
 
 /* ==============================
    INITIALS
@@ -343,6 +386,40 @@ body {
 .nav .nav-disabled small {
     margin-left: auto;
     font-size: 10px;
+}
+
+.attendance-status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 10px;
+    background: rgba(102, 126, 234, .12);
+    color: var(--accent-dark);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.attendance-history {
+    display: grid;
+    gap: 14px;
+}
+
+.attendance-history-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 15px;
+    border-radius: 14px;
+    box-shadow:
+        inset 3px 3px 7px var(--shadow-dark),
+        inset -3px -3px 7px var(--shadow-light);
+}
+
+.attendance-history-row small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-light);
 }
 
 
@@ -805,91 +882,6 @@ body {
 
 
 /* =====================================================
-   STATS
-===================================================== */
-
-.stats {
-
-    display: grid;
-
-    grid-template-columns: repeat(4, 1fr);
-
-    gap: 20px;
-
-}
-
-
-.stat {
-
-    padding: 21px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-
-}
-
-
-.stat-icon {
-
-    width: 54px;
-
-    height: 54px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: var(--bg);
-
-    font-size: 22px;
-
-    color: var(--accent);
-
-    /* Inset circle */
-    box-shadow:
-
-        inset 4px 4px 8px var(--shadow-dark),
-        inset -4px -4px 8px var(--shadow-light);
-
-}
-
-
-.stat h3 {
-
-    font-size: 26px;
-
-    margin-bottom: 3px;
-
-    color: var(--text-dark);
-
-    /* Inset text */
-    text-shadow:
-
-        1px 1px 2px var(--shadow-light),
-        -1px -1px 2px var(--shadow-dark);
-
-}
-
-
-.stat p {
-
-    color: var(--text-light);
-
-    font-size: 12px;
-
-}
-
-
-/* =====================================================
    CHILDREN
 ===================================================== */
 
@@ -1011,87 +1003,6 @@ body {
     color: var(--text-dark);
 
     font-weight: 600;
-
-}
-
-
-/* =====================================================
-   SERVICES
-===================================================== */
-
-.services-grid {
-
-    display: grid;
-
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 20px;
-
-}
-
-
-.service {
-
-    display: block;
-
-    padding: 23px;
-
-    color: var(--text-dark);
-
-    text-decoration: none;
-
-}
-
-
-.service-icon {
-
-    width: 54px;
-
-    height: 54px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    margin-bottom: 16px;
-
-    border-radius: 50%;
-
-    background: var(--bg);
-
-    font-size: 22px;
-
-    color: var(--accent);
-
-    /* Inset circle */
-    box-shadow:
-
-        inset 4px 4px 8px var(--shadow-dark),
-        inset -4px -4px 8px var(--shadow-light);
-
-}
-
-
-.service h3 {
-
-    font-size: 16px;
-
-    margin-bottom: 7px;
-
-    color: var(--text-dark);
-
-}
-
-
-.service p {
-
-    color: var(--text-light);
-
-    font-size: 13px;
-
-    line-height: 1.6;
 
 }
 
@@ -1243,14 +1154,7 @@ body {
 
     }
 
-    .stats {
-
-        grid-template-columns: repeat(2, 1fr);
-
-    }
-
-    .children-grid,
-    .services-grid {
+    .children-grid {
 
         grid-template-columns: repeat(2, 1fr);
 
@@ -1312,9 +1216,7 @@ body {
 
 
     .profile-grid,
-    .stats,
-    .children-grid,
-    .services-grid {
+    .children-grid {
 
         grid-template-columns: 1fr;
 
@@ -1403,11 +1305,10 @@ body {
             <small>Not available</small>
         </span>
 
-        <span class="nav-disabled" aria-disabled="true">
+        <a href="#attendance">
             🕒
             <span>Attendance</span>
-            <small>Not available</small>
-        </span>
+        </a>
 
     </div>
 
@@ -1739,6 +1640,62 @@ body {
 
         </div>
 
+    <?php endif; ?>
+
+    <div class="section-title" id="attendance">
+        <h2>Children's Attendance</h2>
+        <span>Latest 10 records per child</span>
+    </div>
+
+    <?php if ($attendance_error): ?>
+        <div class="card empty" role="alert">
+            <h3>Unable to Load Attendance</h3>
+            <p>Please try again later or contact the school administrator.</p>
+        </div>
+    <?php elseif ($children_count === 0): ?>
+        <div class="card empty">
+            <h3>No Linked Children</h3>
+            <p>Attendance will appear here once a child is linked to your account.</p>
+        </div>
+    <?php else: ?>
+        <div class="children-grid">
+            <?php $displayed_child_ids = []; ?>
+            <?php foreach ($children as $child): ?>
+                <?php
+                $child_id = (int) $child["id"];
+                if (isset($displayed_child_ids[$child_id])) {
+                    continue;
+                }
+                $displayed_child_ids[$child_id] = true;
+                $child_records = $child_attendance[$child_id] ?? [];
+                ?>
+                <section class="card child-card">
+                    <h3><?= htmlspecialchars($child["full_name"], ENT_QUOTES, "UTF-8") ?></h3>
+                    <p><?= htmlspecialchars($child["student_number"], ENT_QUOTES, "UTF-8") ?></p>
+
+                    <?php if ($child_records === []): ?>
+                        <p>No attendance records have been recorded yet.</p>
+                    <?php else: ?>
+                        <div class="attendance-history">
+                            <?php foreach ($child_records as $record): ?>
+                                <div class="attendance-history-row">
+                                    <div>
+                                        <strong><?= htmlspecialchars(date("M j, Y", strtotime($record["attendance_date"])), ENT_QUOTES, "UTF-8") ?></strong>
+                                        <small>
+                                            <?= htmlspecialchars($record["class_name"], ENT_QUOTES, "UTF-8") ?>
+                                            (<?= htmlspecialchars($record["class_code"], ENT_QUOTES, "UTF-8") ?>)
+                                        </small>
+                                    </div>
+                                    <span class="attendance-status">
+                                        <?= htmlspecialchars(ucfirst($record["status"]), ENT_QUOTES, "UTF-8") ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </section>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 
 

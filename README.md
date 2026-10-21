@@ -7,10 +7,12 @@ A role-based school administration application built with PHP and PostgreSQL. It
 - Authentication using email or a role-specific identifier.
 - Administrator management for students, teachers, parents, classes, subjects, and teacher/class/subject allocations.
 - Teacher views for assigned classes, subjects, and students.
+- Teacher attendance recording for assigned classes, with corrections tracked in an audit history.
+- Student attendance history and parent views limited to their linked children.
 - Student and parent dashboards, including parent-child links and student profile details.
 - Password recovery and reset pages.
 
-Attendance recording, grade entry and publishing, assignments, timetables, billing, announcements, and reporting are not implemented yet. Dashboard labels for these areas are not evidence that the workflows are available.
+Grade entry and publishing, assignments, timetables, billing, announcements, and reporting are not implemented yet. Dashboard labels for these areas are not evidence that the workflows are available.
 
 ## Technology
 
@@ -51,6 +53,7 @@ The initial migration is for a **new, empty database**. The migration command re
 - SQL migrations live in `database/migrations/` and are applied in filename order.
 - Applied versions are recorded in `schema_migrations`; do not edit an applied migration. Add a new numbered migration for subsequent schema changes.
 - CI starts PostgreSQL, applies migrations to a fresh database, and checks core relationships and constraints.
+- Teachers can record present, absent, late, or excused attendance for today or a past date, only in classes assigned to them. Corrections are recorded, and students/classes with attendance history cannot be hard-deleted.
 - The initial administrator can only be created when there is no existing admin account.
 
 ## Product direction

@@ -91,6 +91,36 @@ try {
 
 $subject_count = count($subjects);
 
+$attendance_records = [];
+$attendance_error = false;
+
+if ($page === "attendance") {
+    try {
+        $attendance_stmt = $pdo->prepare(
+            "SELECT
+                attendance_sessions.attendance_date,
+                attendance_records.status,
+                classes.class_name,
+                classes.class_code
+             FROM students
+             INNER JOIN attendance_records
+                ON attendance_records.student_id = students.id
+             INNER JOIN attendance_sessions
+                ON attendance_sessions.id = attendance_records.session_id
+             INNER JOIN classes
+                ON classes.id = attendance_sessions.class_id
+             WHERE students.user_id = ?
+             ORDER BY attendance_sessions.attendance_date DESC, classes.class_name ASC
+             LIMIT 100"
+        );
+        $attendance_stmt->execute([$user_id]);
+        $attendance_records = $attendance_stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Student attendance query failed: " . $e->getMessage());
+        $attendance_error = true;
+    }
+}
+
 $initial = function_exists("mb_substr")
     ? mb_substr($full_name, 0, 1, "UTF-8")
     : substr($full_name, 0, 1);
@@ -924,6 +954,43 @@ $current_title = $page_titles[$page];
 
             <?php endif; ?>
 
+        </section>
+
+    <?php elseif ($page === "attendance"): ?>
+
+        <section class="subjects-page">
+            <h2 class="section-heading">My Attendance</h2>
+
+            <?php if ($attendance_error): ?>
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Unable to Load Attendance</h3>
+                    <p>Please try again later or contact the school administrator.</p>
+                </div>
+            <?php elseif ($attendance_records === []): ?>
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h3>No Attendance Records Yet</h3>
+                    <p>Your attendance will appear here after it has been recorded by a teacher.</p>
+                </div>
+            <?php else: ?>
+                <div class="subject-grid">
+                    <?php foreach ($attendance_records as $record): ?>
+                        <article class="subject-card">
+                            <div class="subject-icon">📋</div>
+                            <h3><?= e(date("F j, Y", strtotime($record["attendance_date"]))) ?></h3>
+                            <p class="subject-detail">
+                                <strong>Class</strong>
+                                <?= e($record["class_name"]) ?> (<?= e($record["class_code"]) ?>)
+                            </p>
+                            <p class="subject-detail">
+                                <strong>Status</strong>
+                                <?= e(ucfirst($record["status"])) ?>
+                            </p>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </section>
 
     <?php elseif ($page === "profile"): ?>

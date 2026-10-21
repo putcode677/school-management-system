@@ -15,7 +15,8 @@ The main product gap is workflow depth. Important menu items appear in dashboard
 | Class/subject allocations | Admin can assign teachers to classes and subjects | Supports basic academic organization |
 | Teacher workspace | Reads assigned classes, subjects, and students | Mostly read-only; no teaching workflows yet |
 | Student and parent portals | Profile/relationship information and role-specific dashboards | Portal structure exists; academic activity is not yet connected |
-| Attendance, gradebook, assignments, timetable, billing, communication, reporting | Advertised in places, but no complete workflows | Must be treated as roadmap, not released functionality |
+| Attendance | Teacher class/date recording with four statuses, audited corrections, and student/linked-parent read views | Initial end-to-end workflow is implemented; refine attendance summaries, school calendars, and administrative oversight later |
+| Gradebook, assignments, timetable, billing, communication, reporting | Some areas advertised, but no complete workflows | Must be treated as roadmap, not released functionality |
 | Delivery and maintenance | No checked-in schema/migrations, automated tests, or deployment guide found in the project inventory | New installations and upgrades are hard to reproduce |
 
 ## Comparison with established platforms
@@ -42,7 +43,7 @@ Large platforms also invest in reliable permissions, auditability, responsive/mo
 
 ### 2. Complete daily school operations
 
-- Build attendance recording by class/date, with correction history and clear attendance states.
+- Extend attendance with school calendars, authorized administrative review, and reporting after policies are agreed.
 - Add assessment setup, marks entry, calculation rules, review/approval, and controlled publication of results.
 - Add timetable periods, room/teacher conflict checks, and role-based views.
 - Add assignment creation/submission only if the school intends to operate an LMS; otherwise integrate with an established LMS rather than building a partial clone.

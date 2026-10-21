@@ -14,6 +14,13 @@ function expectConstraintViolation(PDO $pdo, callable $operation, string $name):
         $operation();
     } catch (PDOException $e) {
         $pdo->exec("ROLLBACK TO SAVEPOINT constraint_check");
+        if (!str_starts_with((string) $e->getCode(), "23")) {
+            throw new RuntimeException(
+                "Unexpected database error during constraint test: $name",
+                0,
+                $e
+            );
+        }
         echo "PASS: $name\n";
         return;
     }
@@ -91,6 +98,55 @@ try {
     );
     $link->execute([$teacherId, $subjectId]);
 
+    $attendanceSession = $pdo->prepare(
+        "INSERT INTO attendance_sessions
+            (class_id, attendance_date, created_by, updated_by)
+         VALUES (?, CURRENT_DATE, ?, ?)
+         RETURNING id"
+    );
+    $attendanceSession->execute([$classId, $teacherId, $teacherId]);
+    $attendanceSessionId = (int) $attendanceSession->fetchColumn();
+
+    $attendanceRecord = $pdo->prepare(
+        "INSERT INTO attendance_records
+            (session_id, student_id, status, recorded_by)
+         VALUES (?, ?, 'present', ?)
+         RETURNING id"
+    );
+    $attendanceRecord->execute([$attendanceSessionId, $studentId, $teacherId]);
+    $attendanceRecordId = (int) $attendanceRecord->fetchColumn();
+
+    $attendanceChange = $pdo->prepare(
+        "INSERT INTO attendance_changes
+            (attendance_record_id, previous_status, new_status, changed_by)
+         VALUES (?, 'present', 'late', ?)"
+    );
+    $attendanceChange->execute([$attendanceRecordId, $teacherId]);
+
+    $attendanceUpdate = $pdo->prepare(
+        "UPDATE attendance_records SET status = 'late' WHERE id = ?"
+    );
+    $attendanceUpdate->execute([$attendanceRecordId]);
+
+    $attendanceRead = $pdo->prepare(
+        "SELECT ar.status, ac.previous_status, ac.new_status
+         FROM attendance_records ar
+         JOIN attendance_sessions s ON s.id = ar.session_id
+         JOIN attendance_changes ac ON ac.attendance_record_id = ar.id
+         WHERE ar.id = ? AND s.class_id = ? AND ar.student_id = ?"
+    );
+    $attendanceRead->execute([$attendanceRecordId, $classId, $studentId]);
+    $attendanceResult = $attendanceRead->fetch(PDO::FETCH_ASSOC);
+    if (
+        !$attendanceResult
+        || $attendanceResult["status"] !== "late"
+        || $attendanceResult["previous_status"] !== "present"
+        || $attendanceResult["new_status"] !== "late"
+    ) {
+        throw new RuntimeException("Attendance records or correction history did not persist.");
+    }
+    echo "PASS: attendance records and correction history\n";
+
     $link = $pdo->prepare(
         "INSERT INTO password_resets (user_id, token, expires_at)
          VALUES (?, ?, CURRENT_TIMESTAMP + INTERVAL '30 minutes')"
@@ -140,6 +196,37 @@ try {
             $stmt->execute([$studentId, $classId]);
         },
         "duplicate class membership prevention"
+    );
+
+    expectConstraintViolation(
+        $pdo,
+        static function () use ($pdo, $attendanceSessionId, $studentId, $teacherId): void {
+            $stmt = $pdo->prepare(
+                "INSERT INTO attendance_records
+                    (session_id, student_id, status, recorded_by)
+                 VALUES (?, ?, 'unknown', ?)"
+            );
+            $stmt->execute([$attendanceSessionId, $studentId, $teacherId]);
+        },
+        "attendance status validation"
+    );
+
+    expectConstraintViolation(
+        $pdo,
+        static function () use ($pdo, $studentId): void {
+            $stmt = $pdo->prepare("DELETE FROM students WHERE id = ?");
+            $stmt->execute([$studentId]);
+        },
+        "preserve student attendance history"
+    );
+
+    expectConstraintViolation(
+        $pdo,
+        static function () use ($pdo, $classId): void {
+            $stmt = $pdo->prepare("DELETE FROM classes WHERE id = ?");
+            $stmt->execute([$classId]);
+        },
+        "preserve class attendance history"
     );
 
     $pdo->rollBack();
