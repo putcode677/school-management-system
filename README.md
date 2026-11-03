@@ -18,7 +18,35 @@ Grade entry and publishing, assignments, timetables, billing, announcements, and
 
 - PHP
 - PostgreSQL through PDO
-- HTML, CSS, and JavaScript
+- React 18 with Vite for the application interface
+- PHP JSON API for authentication and PostgreSQL-backed data
+
+## React application
+
+The project now includes a React client in `src/`, served by Vite during development
+and built to `dist/` for production. The existing PHP pages remain available while
+the React client is migrated feature by feature.
+
+Install dependencies and start the client:
+
+```bash
+npm install
+npm run dev
+```
+
+The Vite development server proxies `/api` requests to PHP on
+`http://localhost:8000`. Start a PHP server from the project root in a second
+terminal when developing locally:
+
+```bash
+php -S localhost:8000
+```
+
+The React client currently provides session login, role-aware navigation,
+administrator directories for students, teachers, parents, classes, and subjects,
+and live dashboard summaries. Attendance, profile editing, password recovery, and
+the remaining write workflows should be moved behind the API before their legacy
+pages are retired.
 
 ## Setup
 
