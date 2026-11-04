@@ -7,9 +7,12 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Plus,
+  Search,
   School,
   Settings,
   ShieldCheck,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -148,10 +151,41 @@ function StatCard({ label, value, icon: Icon, tone }) {
   return <article className={`stat-card ${tone}`}><div className="stat-icon"><Icon size={20} /></div><div><strong>{value ?? "—"}</strong><span>{label}</span></div></article>;
 }
 
-function DataTable({ title, rows, columns, empty = "No records found." }) {
-  return <section className="panel"><div className="panel-heading"><div><h2>{title}</h2><p className="muted">Live data from your school database.</p></div></div>
-    {rows.length ? <div className="table-wrap"><table><thead><tr>{columns.map(([label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={row.id ?? index}>{columns.map(([, field, render]) => <td key={field}>{render ? render(row) : row[field] || "—"}</td>)}</tr>)}</tbody></table></div> : <div className="empty-state">{empty}</div>}
+function DataTable({ title, rows, columns, empty = "No records found.", onDelete }) {
+  const [query, setQuery] = useState("");
+  const filteredRows = rows.filter((row) => Object.values(row).some((value) => String(value ?? "").toLowerCase().includes(query.toLowerCase())));
+  return <section className="panel"><div className="panel-heading table-toolbar"><div><h2>{title}</h2><p className="muted">Live data from your school database.</p></div><div className="search-box"><Search size={16} /><input placeholder="Search records" value={query} onChange={(event) => setQuery(event.target.value)} /></div></div>
+    {filteredRows.length ? <div className="table-wrap"><table><thead><tr>{columns.map(([label]) => <th key={label}>{label}</th>)}{onDelete && <th>Actions</th>}</tr></thead><tbody>{filteredRows.map((row, index) => <tr key={row.id ?? index}>{columns.map(([, field, render]) => <td key={field}>{render ? render(row) : row[field] || "—"}</td>)}{onDelete && <td><button className="table-action danger" onClick={() => onDelete(row)} aria-label={`Delete ${row.full_name}`}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div> : <div className="empty-state">{query ? "No records match your search." : empty}</div>}
   </section>;
+}
+
+function StudentForm({ classes, onClose, onCreated }) {
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", student_number: "", class_id: "", date_of_birth: "", gender: "", phone: "", address: "", admission_date: "" });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const update = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await api("create-student", { method: "POST", body: JSON.stringify(form) });
+      onCreated();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return <div className="modal-backdrop"><section className="modal-card"><div className="modal-heading"><div><p className="eyebrow">NEW RECORD</p><h2>Add student</h2></div><button className="icon-button" onClick={onClose} aria-label="Close dialog"><X size={20} /></button></div>{error && <div className="alert error">{error}</div>}<form className="form-grid" onSubmit={submit}>
+    <label>Full name<input value={form.full_name} onChange={update("full_name")} required /></label><label>Email<input type="email" value={form.email} onChange={update("email")} required /></label>
+    <label>Student number<input value={form.student_number} onChange={update("student_number")} required /></label><label>Temporary password<input type="password" value={form.password} onChange={update("password")} minLength={12} required /></label>
+    <label>Class<select value={form.class_id} onChange={update("class_id")}><option value="">Unassigned</option>{classes.map((item) => <option key={item.id} value={item.id}>{item.class_name} ({item.class_code})</option>)}</select></label>
+    <label>Gender<select value={form.gender} onChange={update("gender")}><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+    <label>Date of birth<input type="date" value={form.date_of_birth} onChange={update("date_of_birth")} /></label><label>Admission date<input type="date" value={form.admission_date} onChange={update("admission_date")} /></label>
+    <label>Phone<input value={form.phone} onChange={update("phone")} /></label><label>Address<input value={form.address} onChange={update("address")} /></label>
+    <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? "Creating..." : "Create student"}</button></div>
+  </form></section></div>;
 }
 
 function Dashboard({ user, data, onNavigate }) {
@@ -181,6 +215,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState("");
+  const [showStudentForm, setShowStudentForm] = useState(false);
 
   useEffect(() => {
     api("me").then((result) => setUser(result.user)).catch(() => {}).finally(() => setLoading(false));
@@ -189,14 +224,34 @@ function App() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    api(active === "dashboard" ? "dashboard" : `resource&name=${active}`)
-      .then(setData)
+    const request = active === "dashboard"
+      ? api("dashboard")
+      : active === "students"
+        ? Promise.all([api("resource&name=students"), api("resource&name=classes")]).then(([students, classes]) => ({ rows: students.rows, classes: classes.rows }))
+        : api(`resource&name=${active}`);
+    request.then(setData)
       .catch((requestError) => setError(requestError.message))
       .finally(() => setLoading(false));
   }, [user, active]);
 
   const navigate = (page) => { setActive(page); setSidebarOpen(false); setError(""); };
   const logout = async () => { await api("logout", { method: "POST" }).catch(() => {}); setUser(null); };
+  const refresh = () => {
+    setLoading(true);
+    Promise.all([api("resource&name=students"), api("resource&name=classes")])
+      .then(([students, classes]) => setData({ rows: students.rows, classes: classes.rows }))
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false));
+  };
+  const deleteStudent = async (student) => {
+    if (!window.confirm(`Delete ${student.full_name}? This also removes the student account.`)) return;
+    try {
+      await api("delete-student", { method: "POST", body: JSON.stringify({ id: student.id }) });
+      refresh();
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  };
   const rows = useMemo(() => data?.rows || [], [data]);
 
   if (loading && !user) return <div className="loading-screen">Loading your workspace...</div>;
@@ -213,8 +268,9 @@ function App() {
     <Sidebar user={user} active={active} onNavigate={navigate} onLogout={logout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     <main className="main-content"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="Open menu"><Menu size={21} /></button><div className="breadcrumb">School OS <span>/</span> {active === "dashboard" ? "Overview" : active}</div><div className="topbar-user"><span className="avatar">{initials(user.full_name)}</span><span>{user.full_name}</span></div></header>
       {error && <div className="alert error page-alert">{error}</div>}
-      {loading ? <div className="loading-state">Loading...</div> : active === "dashboard" ? <Dashboard user={user} data={data} onNavigate={navigate} /> : columns[active] ? <div className="page-content"><div className="page-heading"><div><p className="eyebrow">DIRECTORY</p><h1>{active[0].toUpperCase() + active.slice(1)}</h1><p className="muted">Browse and manage your school records.</p></div></div><DataTable title={`All ${active}`} rows={rows} columns={columns[active]} /></div> : <div className="page-content"><div className="panel empty-state"><CalendarCheck size={30} /><h2>{active[0].toUpperCase() + active.slice(1)}</h2><p className="muted">This workspace is ready for the next workflow implementation.</p></div></div>}
+      {loading ? <div className="loading-state">Loading...</div> : active === "dashboard" ? <Dashboard user={user} data={data} onNavigate={navigate} /> : columns[active] ? <div className="page-content"><div className="page-heading"><div><p className="eyebrow">DIRECTORY</p><h1>{active[0].toUpperCase() + active.slice(1)}</h1><p className="muted">Browse and manage your school records.</p></div>{active === "students" && <button className="primary-button compact-button" onClick={() => setShowStudentForm(true)}><Plus size={16} /> Add student</button>}</div><DataTable title={`All ${active}`} rows={rows} columns={columns[active]} onDelete={active === "students" ? deleteStudent : undefined} /></div> : <div className="page-content"><div className="panel empty-state"><CalendarCheck size={30} /><h2>{active[0].toUpperCase() + active.slice(1)}</h2><p className="muted">This workspace is ready for the next workflow implementation.</p></div></div>}
     </main>
+    {showStudentForm && <StudentForm classes={data?.classes || []} onClose={() => setShowStudentForm(false)} onCreated={() => { setShowStudentForm(false); refresh(); }} />}
   </div>;
 }
 

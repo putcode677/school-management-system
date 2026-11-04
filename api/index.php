@@ -20,6 +20,13 @@ function body(): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function requireAdmin(array $user): void
+{
+    if ($user["role"] !== "admin") {
+        respond(["error" => "Administrator access is required."], 403);
+    }
+}
+
 function requireUser(): array
 {
     if (!isset($_SESSION["user_id"], $_SESSION["role"])) {
@@ -87,6 +94,78 @@ try {
     $user = requireUser();
     if ($action === "me") respond(["user" => $user]);
 
+    if ($action === "create-student" && $_SERVER["REQUEST_METHOD"] === "POST") {
+        requireAdmin($user);
+        $input = body();
+        $fullName = trim((string) ($input["full_name"] ?? ""));
+        $email = trim((string) ($input["email"] ?? ""));
+        $password = (string) ($input["password"] ?? "");
+        $studentNumber = trim((string) ($input["student_number"] ?? ""));
+        $classId = (int) ($input["class_id"] ?? 0);
+
+        if ($fullName === "" || $email === "" || $password === "" || $studentNumber === "") {
+            respond(["error" => "Name, email, password, and student number are required."], 422);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            respond(["error" => "Enter a valid email address."], 422);
+        }
+        if (strlen($password) < 12) {
+            respond(["error" => "Student passwords must be at least 12 characters."], 422);
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $userStatement = $pdo->prepare(
+                "INSERT INTO users (full_name, email, password, role, status)
+                 VALUES (?, ?, ?, 'student', 'active') RETURNING id"
+            );
+            $userStatement->execute([$fullName, $email, password_hash($password, PASSWORD_DEFAULT)]);
+            $studentUserId = (int) $userStatement->fetchColumn();
+
+            $studentStatement = $pdo->prepare(
+                "INSERT INTO students (user_id, student_number, date_of_birth, gender, phone, address, admission_date)
+                 VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"
+            );
+            $studentStatement->execute([
+                $studentUserId,
+                $studentNumber,
+                $input["date_of_birth"] ?? null,
+                $input["gender"] ?? null,
+                trim((string) ($input["phone"] ?? "")) ?: null,
+                trim((string) ($input["address"] ?? "")) ?: null,
+                $input["admission_date"] ?? null,
+            ]);
+            $studentId = (int) $studentStatement->fetchColumn();
+
+            if ($classId > 0) {
+                $classStatement = $pdo->prepare(
+                    "INSERT INTO student_classes (student_id, class_id) VALUES (?, ?)"
+                );
+                $classStatement->execute([$studentId, $classId]);
+            }
+            $pdo->commit();
+            respond(["ok" => true, "id" => $studentId], 201);
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $exception;
+        }
+    }
+
+    if ($action === "delete-student" && $_SERVER["REQUEST_METHOD"] === "POST") {
+        requireAdmin($user);
+        $studentId = (int) (body()["id"] ?? 0);
+        if ($studentId <= 0) respond(["error" => "A valid student is required."], 422);
+
+        $statement = $pdo->prepare("SELECT user_id FROM students WHERE id = ?");
+        $statement->execute([$studentId]);
+        $studentUserId = $statement->fetchColumn();
+        if ($studentUserId === false) respond(["error" => "Student not found."], 404);
+
+        $delete = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $delete->execute([(int) $studentUserId]);
+        respond(["ok" => true]);
+    }
+
     if ($action === "dashboard") {
         $stats = [];
         if ($user["role"] === "admin") {
@@ -133,5 +212,8 @@ try {
     respond(["error" => "Unknown action."], 404);
 } catch (PDOException | JsonException $exception) {
     error_log("React API error: " . $exception->getMessage());
+    if ($exception instanceof PDOException && $exception->getCode() === "23505") {
+        respond(["error" => "That email or student number is already in use."], 409);
+    }
     respond(["error" => "The request could not be completed."], 500);
 }
