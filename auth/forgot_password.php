@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../config/security.php";
 
 require_once "../config/database.php";
 
@@ -9,6 +9,11 @@ $message_type = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
+    requireCsrfToken($_POST["csrf_token"] ?? null);
+    if (!enforceRateLimit("password_reset_request", 5, 900)) {
+        $message = "Too many reset requests. Please try again later.";
+        $message_type = "error";
+    } else {
     $email = trim($_POST["email"]);
 
     if (empty($email)) {
@@ -83,6 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 . "</a>";
 
             $message_type = "success";
+        }
         }
     }
 }
@@ -260,6 +266,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <?php endif; ?>
 
     <form method="POST">
+        <?= csrfField() ?>
 
         <label for="email">
             Email Address

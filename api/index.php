@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once __DIR__ . "/../config/security.php";
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . "/../config/database.php";
@@ -12,6 +12,12 @@ function respond(array $payload, int $status = 200): never
     http_response_code($status);
     echo json_encode($payload, JSON_THROW_ON_ERROR);
     exit;
+}
+
+function requireApiCsrf(): void
+{
+    $token = $_SERVER["HTTP_X_CSRF_TOKEN"] ?? null;
+    requireCsrfToken($token);
 }
 
 function body(): array
@@ -57,6 +63,10 @@ $action = $_GET["action"] ?? "";
 
 try {
     if ($action === "login" && $_SERVER["REQUEST_METHOD"] === "POST") {
+        requireApiCsrf();
+        if (!enforceRateLimit("api_login", 10, 900)) {
+            respond(["error" => "Too many login attempts. Please try again later."], 429);
+        }
         $input = body();
         $credential = trim((string) ($input["credential"] ?? ""));
         $password = (string) ($input["password"] ?? "");
@@ -86,15 +96,19 @@ try {
     }
 
     if ($action === "logout") {
+        requireApiCsrf();
         session_unset();
         session_destroy();
         respond(["ok" => true]);
     }
 
+    if ($action === "csrf") respond(["token" => csrfToken()]);
+
     $user = requireUser();
     if ($action === "me") respond(["user" => $user]);
 
     if ($action === "create-student" && $_SERVER["REQUEST_METHOD"] === "POST") {
+        requireApiCsrf();
         requireAdmin($user);
         $input = body();
         $fullName = trim((string) ($input["full_name"] ?? ""));
@@ -109,7 +123,7 @@ try {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             respond(["error" => "Enter a valid email address."], 422);
         }
-        if (strlen($password) < 12) {
+        if (!passwordIsAcceptable($password)) {
             respond(["error" => "Student passwords must be at least 12 characters."], 422);
         }
 
@@ -152,6 +166,7 @@ try {
     }
 
     if ($action === "delete-student" && $_SERVER["REQUEST_METHOD"] === "POST") {
+        requireApiCsrf();
         requireAdmin($user);
         $studentId = (int) (body()["id"] ?? 0);
         if ($studentId <= 0) respond(["error" => "A valid student is required."], 422);

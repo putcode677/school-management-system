@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 
 require_once "../../config/database.php";
 
@@ -26,6 +26,7 @@ $specialization = "";
 $hire_date = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $full_name = trim($_POST["full_name"] ?? "");
     $email = trim($_POST["email"] ?? "");
@@ -448,6 +449,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <div class="form-grid">
 

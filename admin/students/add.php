@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 require_once "../../config/database.php";
 
 // Check admin login
@@ -14,6 +14,7 @@ $message = "";
 $classes = $pdo->query("SELECT id, class_name, class_code FROM classes ORDER BY class_name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
@@ -225,6 +226,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="card">
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <!-- PERSONAL INFORMATION -->
 

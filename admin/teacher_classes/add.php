@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 
 require_once "../../config/database.php";
 
@@ -29,6 +29,7 @@ $message = "";
 $message_type = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $teacher_id = (int)($_POST["teacher_id"] ?? 0);
     $class_id   = (int)($_POST["class_id"] ?? 0);
@@ -302,6 +303,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <?php endif; ?>
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <div class="form-group">
 
@@ -397,4 +399,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 </body>
 </html>
-

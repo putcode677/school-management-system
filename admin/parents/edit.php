@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 require_once "../../config/database.php";
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -55,6 +55,7 @@ $parent_number = $parent['parent_number'] ?? '';
 $status = $parent['status'] ?? 'active';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $full_name = trim($_POST["full_name"] ?? "");
     $email = trim($_POST["email"] ?? "");
@@ -182,6 +183,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <div class="card">
         <form method="POST">
+            <?= csrfField() ?>
 
             <h2>Parent Information</h2>
 
@@ -255,4 +257,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 </body>
 </html>
-

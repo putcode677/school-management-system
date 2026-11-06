@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../../config/security.php";
 
 require_once "../../config/database.php";
 
@@ -58,6 +58,7 @@ $students = $pdo->query("
 */
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $parent_id = (int) ($_POST["parent_id"] ?? 0);
     $student_id = (int) ($_POST["student_id"] ?? 0);
@@ -213,6 +214,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="card">
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <h2>Relationship Information</h2>
 

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 require_once "../../config/database.php";
 
 if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "admin") {
@@ -28,6 +28,7 @@ $message = "";
 $message_type = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $teacher_id = (int)($_POST["teacher_id"] ?? 0);
     $subject_id = (int)($_POST["subject_id"] ?? 0);
@@ -254,6 +255,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <?php endif; ?>
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <div class="form-group">
                 <label for="teacher_id">
@@ -308,4 +310,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 </body>
 </html>
-

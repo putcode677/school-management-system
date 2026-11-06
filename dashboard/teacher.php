@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../config/security.php";
 
 require_once "../config/database.php";
 
@@ -180,9 +180,7 @@ $attendance_errors = [];
 $attendance_message = $_SESSION["attendance_flash"] ?? "";
 unset($_SESSION["attendance_flash"]);
 
-if (!isset($_SESSION["csrf_token"])) {
-    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
-}
+csrfToken();
 
 $attendance_class_id = filter_var(
     $_GET["class_id"] ?? 0,
@@ -224,7 +222,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $page === "attendance") {
 
     if (
         !is_string($posted_token)
-        || !hash_equals($_SESSION["csrf_token"], $posted_token)
+        || !isValidCsrfToken($posted_token)
     ) {
         $attendance_errors[] = "Your session has expired. Reload the page and try again.";
     }
@@ -1761,7 +1759,7 @@ if ($page === "attendance" && $attendance_class_id > 0) {
 
                     <div class="student-table-wrapper">
                         <form method="post">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") ?>">
+                            <?= csrfField() ?>
                             <input type="hidden" name="class_id" value="<?= $attendance_class_id ?>">
                             <input type="hidden" name="attendance_date" value="<?= htmlspecialchars($attendance_date, ENT_QUOTES, "UTF-8") ?>">
                             <table class="student-table">

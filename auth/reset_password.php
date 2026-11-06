@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../config/security.php";
 
 require_once "../config/database.php";
 
@@ -59,6 +59,7 @@ if (empty($token)) {
 // Process new password
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $user_id !== null) {
 
+    requireCsrfToken($_POST["csrf_token"] ?? null);
     $password = $_POST["password"] ?? "";
     $confirm_password = $_POST["confirm_password"] ?? "";
 
@@ -67,9 +68,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $user_id !== null) {
         $message = "Please enter both password fields.";
         $message_type = "error";
 
-    } elseif (strlen($password) < 8) {
+    } elseif (!passwordIsAcceptable($password)) {
 
-        $message = "Password must be at least 8 characters.";
+        $message = "Password must be at least 12 characters.";
         $message_type = "error";
 
     } elseif ($password !== $confirm_password) {
@@ -286,6 +287,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $user_id !== null) {
     <?php if ($user_id !== null): ?>
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <label for="password">
                 New Password

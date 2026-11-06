@@ -17,10 +17,22 @@ import {
   X,
 } from "lucide-react";
 
+let csrfTokenValue = "";
+
 const api = async (action, options = {}) => {
+  const method = options.method || "GET";
+  if (method !== "GET" && action !== "csrf" && !csrfTokenValue) {
+    const csrfResponse = await fetch("/api/index.php?action=csrf", { credentials: "include" });
+    const csrfPayload = await csrfResponse.json();
+    csrfTokenValue = csrfPayload.token || "";
+  }
   const response = await fetch(`/api/index.php?action=${action}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(csrfTokenValue ? { "X-CSRF-Token": csrfTokenValue } : {}),
+      ...options.headers,
+    },
     ...options,
   });
   const payload = await response.json().catch(() => ({}));
@@ -235,7 +247,7 @@ function App() {
   }, [user, active]);
 
   const navigate = (page) => { setActive(page); setSidebarOpen(false); setError(""); };
-  const logout = async () => { await api("logout", { method: "POST" }).catch(() => {}); setUser(null); };
+  const logout = async () => { await api("logout", { method: "POST" }).catch(() => {}); csrfTokenValue = ""; setUser(null); };
   const refresh = () => {
     setLoading(true);
     Promise.all([api("resource&name=students"), api("resource&name=classes")])

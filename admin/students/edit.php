@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 require_once "../../config/database.php";
 
 // Check admin login
@@ -73,6 +73,7 @@ try {
 // ===============================
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $full_name = trim($_POST['full_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -789,6 +790,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
         <form method="POST">
+            <?= csrfField() ?>
 
 
             <!-- PERSONAL INFORMATION -->
@@ -1173,4 +1175,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </body>
 
 </html>
-

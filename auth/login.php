@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../config/security.php";
 
 require_once "../config/database.php";
 
@@ -9,6 +9,11 @@ $message_type = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
+    requireCsrfToken($_POST["csrf_token"] ?? null);
+    if (!enforceRateLimit("login", 10, 900)) {
+        $message = "Too many login attempts. Please try again later.";
+        $message_type = "error";
+    } else {
     $credential = trim($_POST["credential"] ?? "");
     $password = $_POST["password"] ?? "";
 
@@ -151,6 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     $message = "Invalid user role.";
                     $message_type = "error";
+            }
             }
         }
     }
@@ -686,6 +692,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <?php endif; ?>
 
     <form method="POST">
+        <?= csrfField() ?>
 
         <div class="form-group">
 

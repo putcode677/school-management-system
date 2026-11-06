@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../../config/security.php";
 
 require_once "../../config/database.php";
 
@@ -56,6 +56,7 @@ try {
 
 // Handle update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $subject_name = trim($_POST['subject_name'] ?? '');
     $subject_code = trim($_POST['subject_code'] ?? '');
@@ -480,6 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <!-- Subject Name -->
 
@@ -574,4 +576,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </body>
 
 </html>
-

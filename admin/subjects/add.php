@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "../../config/security.php";
 
 require_once "../../config/database.php";
 
@@ -24,6 +24,7 @@ $subject_name = "";
 $description = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $subject_code = trim($_POST["subject_code"] ?? "");
     $subject_name = trim($_POST["subject_name"] ?? "");
@@ -363,6 +364,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <div class="form-group">
 
@@ -449,4 +451,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </body>
 
 </html>
-

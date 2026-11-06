@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../../config/security.php";
 require_once "../../config/database.php";
 
 // Check admin login
@@ -15,6 +15,7 @@ $class_code = "";
 $description = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    requireCsrfToken($_POST["csrf_token"] ?? null);
 
     $class_name = trim($_POST['class_name'] ?? '');
     $class_code = trim($_POST['class_code'] ?? '');
@@ -399,6 +400,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="card">
 
         <form method="POST">
+            <?= csrfField() ?>
 
             <div class="section">
 
@@ -521,4 +523,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </body>
 
 </html>
-
